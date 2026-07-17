@@ -18,6 +18,8 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-002 | Accepted | Hoãn MCP runtime; chỉ xem xét lại bằng read-only allowlist | Bootstrap | 2026-07-16 |
 | D-003 | Accepted | Impeccable CLI advisory portable, không native skill/hook | `local-20260717-impeccable-cli` | 2026-07-17 |
 | D-004 | Accepted | Prompt Intake Gate dùng chung trước task thực chất | `local-20260717-prompt-intake-gate` | 2026-07-17 |
+| D-005 | Accepted | Scaffold khung dự án FastAPI (Backend) và Next.js (Frontend) | `local-20260717-scaffold-vaic` | 2026-07-17 |
+
 
 ---
 
@@ -155,6 +157,35 @@ Gate không áp dụng cho chào hỏi, status hoặc Q&A thông tin ngắn. Nó
 ### Rollback / fallback
 
 Nếu gate tạo friction không chấp nhận được, tạo Decision mới để thu hẹp phạm vi hoặc thay đổi câu hỏi intake. Không nới lỏng cục bộ theo vendor và không cần rollback remote.
+
+---
+
+## D-005 — Khởi tạo stack FastAPI (Backend) và Next.js (Frontend)
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-17
+- **Người đề xuất:** Antigravity
+- **Phạm vi:** API | dependency | deploy | process
+- **Task Record:** `local-20260717-scaffold-vaic`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** Member 1
+
+### Bối cảnh
+Để thực hiện MVP cho 3 thủ tục theo đề bài và đảm bảo tiến độ của hackathon 48 giờ, team cần thống nhất và khởi tạo cấu trúc khung dự án (Scaffold) cho cả phần backend và frontend.
+
+### Lựa chọn đã cân nhắc
+1. Dùng cấu trúc monolith (FastAPI render Jinja2 templates) - Lợi: Đơn giản, deploy nhanh; Hại: Khó tách biệt giao diện widget và headless API.
+2. Dùng Next.js (Frontend) + FastAPI (Backend) riêng biệt - Lợi: Đúng thiết kế đề xuất ở proposal.md, tách biệt giao diện và API rõ ràng, hỗ trợ widget nhúng qua iframe; Hại: Phải quản lý 2 server chạy song song ở local.
+
+### Quyết định
+Chọn phương án 2. Khởi tạo FastAPI trong thư mục `backend/` và Next.js trong thư mục `frontend/`. 
+
+### Hệ quả và kiểm chứng
+- Cả hai phần backend và frontend đều có thể chạy độc lập ở local.
+- Cần cập nhật `PROJECT_CONTEXT.md` và `ARCHITECTURE.md` với các cổng chạy local tương ứng.
+
+### Rollback / fallback
+Nếu một trong hai phần không hoạt động hoặc không deploy được, team sẽ hạ cấp xuống chạy standalone hoặc fallback mock API trực tiếp tại FE.
 
 ---
 
