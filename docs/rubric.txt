@@ -1,0 +1,13 @@
+Rubric : 100 điểm
+
+Technical Implementation & Engineering Depth (20 điểm): Đánh giá mức độ hoàn thiện về mặt kỹ thuật và độ sâu tối ưu mã nguồn/hệ thống.
+
+AI-Native Architecture & Innovation (20 điểm): Đánh giá kiến trúc thuần AI (AI-native) và tính đổi mới sáng tạo trong giải pháp.
+
+Business Viability & Pilot Pathway (20 điểm): Tính khả thi về mặt vận hành/kinh doanh và lộ trình triển khai thử nghiệm (pilot) trong thực tế.
+
+AI-Native UX & Design Thinking (15 điểm): Trải nghiệm người dùng được thiết kế tối ưu cho AI và tư duy thiết kế hướng tới đối tượng sử dụng.
+
+AI Safety, Grounding & Trust (15 điểm): Độ an toàn của AI, khả năng chống "ảo tưởng" (grounding tốt, trích dẫn chuẩn) và mức độ tin cậy của hệ thống.
+
+Presentation, Demo & Defensibility (10 điểm): Kỹ năng thuyết trình, chất lượng live demo và khả năng phản biện, bảo vệ giải pháp trước hội đồng giám khảo.
