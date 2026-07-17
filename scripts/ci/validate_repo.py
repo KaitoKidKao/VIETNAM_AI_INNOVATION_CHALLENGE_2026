@@ -20,6 +20,7 @@ from urllib.parse import unquote
 
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIRECTORY = Path("data")
 REQUIRED_PATHS = (
     "AGENTS.md",
     "CLAUDE.md",
@@ -42,6 +43,7 @@ REQUIRED_PATHS = (
     ".github/BRANCH_RULES.md",
     ".github/repository-settings.json",
     ".github/workflows/repository-guard.yml",
+    ".github/workflows/promote-candidate.yml",
     ".impeccable/config.json",
     "docs/DESIGN.md",
     "docs/PRODUCT.md",
@@ -61,6 +63,9 @@ REQUIRED_PATHS = (
     "evidence/ai-log/schemas/prompt-event.schema.json",
     "scripts/ai_log/ai_log.py",
     "scripts/ci/validate_repo.py",
+    "scripts/ci/changed_scope.py",
+    "scripts/ci/validate_data.py",
+    "scripts/ci/release_manifest.py",
     "scripts/design/impeccable-audit.mjs",
     "scripts/github/sync-repo-settings.ps1",
     "team_docs/phancong.md",
@@ -294,6 +299,11 @@ def default_scope_paths(root: Path) -> list[Path]:
         "selecting tracked and untracked files",
     )
     return nul_delimited_paths(output)
+
+
+def is_data_path(relative_path: Path) -> bool:
+    """Return whether a path belongs to the intentionally payload-free data scope."""
+    return relative_path == DATA_DIRECTORY or DATA_DIRECTORY in relative_path.parents
 
 
 def staged_scope_paths(root: Path) -> list[Path]:
@@ -686,6 +696,8 @@ def validate_file_content(
 
 def validate_default_scope(root: Path, errors: list[str]) -> None:
     for relative_path in default_scope_paths(root):
+        if is_data_path(relative_path):
+            continue
         content = read_workspace_file(root, relative_path)
         if content is None:
             validate_path_policy(relative_path, errors)
@@ -695,14 +707,18 @@ def validate_default_scope(root: Path, errors: list[str]) -> None:
 
 def validate_staged_scope(root: Path, errors: list[str]) -> None:
     for relative_path in staged_scope_paths(root):
+        if is_data_path(relative_path):
+            continue
         validate_file_content(root, relative_path, read_index_file(root, relative_path), errors, validate_links=False)
 
 
 def validate_range_scope(root: Path, value: str, errors: list[str]) -> None:
     paths, head_commit = range_scope_paths(root, value)
     for relative_path in paths:
+        if is_data_path(relative_path):
+            continue
         content = read_revision_file(root, head_commit, relative_path)
-        validate_file_content(root, relative_path, content, errors, validate_links=False)
+        validate_file_content(root, relative_path, content, errors, validate_links=True)
 
 
 def validate_workflow_contract(root: Path, errors: list[str]) -> None:
@@ -715,20 +731,43 @@ def validate_workflow_contract(root: Path, errors: list[str]) -> None:
 
     required_fragments = (
         "name: Repository guard",
+        "scope:",
+        "repository-policy:",
         "repository-guard:",
         "contents: read",
-        "python -m unittest discover -s tests/ci",
-        "python -m unittest discover -s tests/ai_log",
-        "actions/setup-node@v4",
+        "actions/checkout@v6",
+        "actions/setup-node@v6",
+        "actions/setup-python@v6",
         "node --test tests/design/*.mjs",
         "python scripts/ci/validate_repo.py",
-        "--range \"${BASE_SHA}...${GITHUB_SHA}\"",
+        "scripts/ci/changed_scope.py",
+        "scripts/ci/validate_data.py",
+        "release-candidate:",
+        "actions/upload-artifact@v7",
         "pull_request:",
         "workflow_dispatch:",
     )
     for fragment in required_fragments:
         if fragment not in workflow:
             errors.append(f"Repository guard workflow is missing: {fragment}")
+
+    promotion_path = root / ".github/workflows/promote-candidate.yml"
+    try:
+        promotion = promotion_path.read_text(encoding="utf-8")
+    except OSError as error:
+        errors.append(f"Unable to read promotion workflow: {error}")
+        return
+    for fragment in (
+        "name: Promote release candidate",
+        "workflow_dispatch:",
+        "source_run_id:",
+        "confirmation:",
+        "actions/download-artifact@v6",
+        "scripts/ci/release_manifest.py verify",
+        "actions/upload-artifact@v7",
+    ):
+        if fragment not in promotion:
+            errors.append(f"Promotion workflow is missing: {fragment}")
 
 
 def validate_default(root: Path) -> list[str]:

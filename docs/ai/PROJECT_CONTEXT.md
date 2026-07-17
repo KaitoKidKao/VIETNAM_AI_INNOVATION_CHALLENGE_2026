@@ -4,7 +4,7 @@
 >
 > Cập nhật gần nhất: 2026-07-17
 >
-> Decision liên quan: D-005, D-006, D-007, D-008 và D-009
+> Decision liên quan: D-005, D-006, D-007, D-008, D-009 và D-010
 
 Tài liệu này là context sản phẩm tối thiểu cho mọi thành viên và coding agent. Nó phân biệt rõ phần đã có trong source với kiến trúc mục tiêu chưa được xác nhận bằng implementation/evidence.
 

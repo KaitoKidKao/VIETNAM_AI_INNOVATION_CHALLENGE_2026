@@ -1,6 +1,6 @@
 # Cẩm nang vận hành bootstrap của team
 
-> Tài liệu nội bộ. Đề bài, ba MVP và delivery surface web-first đã được chốt; kiến trúc/API/deploy topology mới ở trạng thái `Proposed` và chưa có source code ứng dụng. Mọi phần chưa có bằng chứng trong repo được ghi `TBD`, không tự suy diễn.
+> Tài liệu nội bộ. Đề bài, ba MVP và delivery surface web-first đã được chốt; scaffold frontend/backend đã có theo D-005. Kiến trúc trust/RAG và live deploy topology vẫn `Proposed`. Mọi phần chưa có bằng chứng trong repo được ghi `TBD`, không tự suy diễn.
 
 ## Bản đồ nhanh
 
@@ -78,7 +78,7 @@ Prompt đủ 4 phần
 | Trước commit | `python scripts/ci/validate_repo.py --staged` | Nội dung trong index. |
 | Trước PR/publish | `python scripts/ci/validate_repo.py --range dev...HEAD` | Post-image của Git range. |
 
-Workflow `repository-guard` đã có trên `main` sau bootstrap PR #1/#2 và được cấu hình chạy unit test Python, test wrapper Node cùng guard. Trạng thái run/required check chưa được xác minh bằng quyền GitHub hợp lệ. Đây **chưa** là application lint/test/build CI.
+Theo D-010 `Proposed`, workflow `repository-guard` được thiết kế lại thành fast merge gate: luôn kiểm policy/AI Log, còn frontend, backend, design và data metadata chỉ chạy khi diff liên quan. `data/**` không bị content-scan; `dev` chỉ tạo artifact có manifest checksum và `main` chỉ promote thủ công candidate hợp lệ. Trạng thái run/required check vẫn phải được xác minh trên GitHub; candidate không phải live deploy.
 
 ### Secret và local config
 
@@ -200,8 +200,8 @@ node scripts/design/impeccable-audit.mjs --task local-20260717-ui-review --url h
 | Đề bài và ba MVP hiện hành | Đã chốt trong D-007 | Đổi scope cần Task Record/Decision mới. |
 | Web-first delivery | D-008 đã chốt; D-005 có scaffold frontend/backend | Cần product flow, static-host widget embed và API evidence; portal thật cần sandbox/authorization. |
 | Stack/API/deploy topology | D-005 `Accepted` cho scaffold; D-006 `Proposed` cho RAG/trust/widget/deploy | Peer review capability theo Task Record; provider/model vẫn `TBD`. |
-| Application CI/CD | Chưa có evidence CI ứng dụng | Xác minh lệnh install/lint/test/build của scaffold, rồi thêm CI theo Decision/Task Record. |
-| Hosting, secrets, deploy/CD | Chưa provision | Accept D-006, có application CI, environment, smoke check, rollback và demo fallback. |
+| Application CI/CD | D-010 `Proposed`: application checks theo changed scope và provider-neutral release artifact | Peer review D-010, xác minh workflow xanh; không coi artifact là deploy. |
+| Hosting, secrets, deploy/CD | Chưa provision | Accept D-006/follow-up, chọn provider, có environment, smoke check, rollback và demo fallback. |
 | Demo runbook | Đã có narrative/evidence draft; chưa rehearsal | Có public app, synthetic demo data và fallback đã kiểm chứng. |
 | GitHub remote governance | PR #1/#2 và workflow file đã có; run/labels/protection/required checks chưa xác minh | Có quyền Admin/token hợp lệ và evidence remote trước khi tuyên bố enforcement. |
 
@@ -228,7 +228,7 @@ Không dùng bootstrap như bằng chứng rằng ứng dụng, deploy, data/mod
 
 - Đề bài và ba MVP đã chốt; model/provider và chi tiết procedure-pack đã review vẫn `TBD`.
 - Next.js/FastAPI đã có scaffold theo D-005; RAG/vector store, model/provider, widget hoàn chỉnh và hosting/deploy vẫn là proposal D-006, chưa provision.
-- Application CI/CD, hosting, environment, secret thật và deploy thật chưa được tạo.
+- Live CI/CD hosting, environment, secret thật và deploy thật chưa được tạo. D-010 chỉ thêm fast checks và artifact/promotion provider-neutral.
 - GitHub workflow file đã có trên `main`; run status, labels, branch protection và required checks chưa được xác minh.
 
 Khi các phần trên được chốt, cập nhật source of truth tương ứng thay vì đoán hoặc sửa policy cục bộ. Xem [README](../README.md) để có dashboard và lối vào đầy đủ của repo.

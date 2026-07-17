@@ -113,7 +113,7 @@ spike/<task>-<slug>
 - Với task UI đã có `docs/PRODUCT.md`, `docs/DESIGN.md` và scope/URL được claim, dùng [playbook Impeccable advisory](../../.agents/playbooks/impeccable-audit.md) ở mode `review` hoặc `verify-demo`. Đây là report local dùng chung, không phải native skill/hook, MCP hay CI gate.
 - Khi đã stage thay đổi, chạy `python scripts/ci/validate_repo.py --staged`; trước PR/publish sau này, chạy `python scripts/ci/validate_repo.py --range dev...HEAD` nếu `dev` là base đã chọn.
 - Guard chỉ quét tracked và untracked không bị Git ignore trong mode mặc định. `.env` cục bộ bị ignore không làm fail, nhưng secret file/token sẽ fail nếu được stage hoặc xuất hiện trong Git range.
-- Guard chỉ in path/line an toàn, không in giá trị secret. Application lint/test/build và CD chỉ được thêm khi stack/deployment contract đã chốt.
+- Guard chỉ in path/line an toàn, không in giá trị secret. Theo D-010, app lint/test/build có thể chạy theo changed scope; payload `data/**` không bị content-scan trong fast path và được metadata guard riêng. Release candidate không phải deploy; live CD vẫn cần Decision/provider/secret/rollback evidence.
 
 ### AI Log prompt-only
 

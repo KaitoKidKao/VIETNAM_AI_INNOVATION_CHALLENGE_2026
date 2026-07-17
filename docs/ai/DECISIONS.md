@@ -23,6 +23,7 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-007 | Accepted | Ba procedure pack MVP, pack thứ ba là thành lập hộ kinh doanh | `local-20260717-change-third-mvp` | 2026-07-17 |
 | D-008 | Accepted | Web-first delivery và portal integration pathway | `local-20260717-web-first-portal-scope` | 2026-07-17 |
 | D-009 | Accepted | AI Log prompt-only, provider-neutral và liên kết theo commit | `local-20260717-ai-log` | 2026-07-17 |
+| D-010 | Proposed | Fast merge gate và release artifact provider-neutral | `local-20260718-ci-cd-optimization` | 2026-07-18 |
 
 ---
 
@@ -190,6 +191,38 @@ Codex, Claude, Cursor và Antigravity dùng chung `PromptEvent`/`CommitEvidence`
 Không lưu assistant response, system/developer prompt, tool traffic, chain-of-thought, transcript/session file, screenshot, cookie hoặc absolute source path. Capture lỗi tạo warning không chặn commit; secret/PII phải redact/omit. Guard enforcement bắt đầu từ commit chứa policy, không backfill legacy history. AI Log prompt-only vẫn là compliance gap nếu ban tổ chức bắt buộc raw desktop session/screenshot; cần xác nhận hoặc một gói ngoài Git được review riêng.
 
 Rollback: gỡ local `core.hooksPath`, xóa `.ai-log/` và ngừng record mới; không fallback sang raw session.
+
+---
+
+## D-010 — Fast merge gate và release artifact provider-neutral
+
+- **Trạng thái:** Proposed
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** User-requested CI/CD task
+- **Phạm vi:** process / dependency / deploy
+- **Task Record:** `local-20260718-ci-cd-optimization`
+- **Peer xác nhận:** `TBD` trước publish hoặc activation remote
+
+### Bối cảnh
+
+Repository guard trước đây chạy full bootstrap scan và Git range scan trong cùng một job. `data/**` hiện có hàng nghìn raw payload files nhưng không phải runtime knowledge release; đọc từng file trong range làm local preflight chậm. Đồng thời scaffold D-005 chưa có application lint/test/build CI hay release evidence.
+
+### Quyết định đề xuất
+
+- Giữ check tổng hợp tên `repository-guard`, nhưng chạy các job frontend, backend, design và data metadata theo diff scope để merge gate không cài runtime không liên quan.
+- Repository guard không đọc payload `data/**`; data job chỉ kiểm path/blob metadata. Data quality/provenance/retrieval vẫn thuộc D-006 và approved release sau này.
+- `dev` chỉ sinh frontend/backend artifact cùng manifest checksum; `main` chỉ promote thủ công candidate có source tree khớp. Đây không phải live deploy.
+- Không tạo hosting, environment, secret, URL hoặc provider adapter. Live CD chỉ được xem xét sau D-006/Decision follow-up, peer confirmation, provider, secret, smoke check và rollback contract.
+
+### Hệ quả và kiểm chứng
+
+- Fast paths vẫn kiểm tra policy, AI Log history, secret/path checks cho source ngoài `data/**`; app checks chạy khi code/dependency liên quan đổi.
+- Candidate manifest chứa commit/tree/digest, không chứa secret hoặc raw data payload. Promotion fail closed khi confirmation, tree hoặc checksum không hợp lệ.
+- D-010 chỉ chuyển `Accepted` khi một peer review workflow, check evidence và giới hạn provider-neutral.
+
+### Rollback / fallback
+
+Revert workflow, guard helper và release-manifest changes để quay về repository guard cũ. Không có external deploy state để thu hồi.
 
 ---
 

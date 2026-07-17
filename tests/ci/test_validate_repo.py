@@ -49,17 +49,33 @@ class TemporaryGitRepository(unittest.TestCase):
 
     def create_valid_default_fixture(self) -> None:
         workflow = """name: Repository guard
+scope:
+repository-policy:
 repository-guard:
   permissions: contents: read
   pull_request:
 workflow_dispatch:
   steps:
-    - uses: actions/setup-node@v4
+    - uses: actions/checkout@v6
+    - uses: actions/setup-node@v6
+    - uses: actions/setup-python@v6
     - run: python -m unittest discover -s tests/ci -p test_*.py
     - run: python -m unittest discover -s tests/ai_log -p test_*.py
     - run: node --test tests/design/*.mjs
     - run: python scripts/ci/validate_repo.py
-    - run: python scripts/ci/validate_repo.py --range "${BASE_SHA}...${GITHUB_SHA}"
+    - run: python scripts/ci/changed_scope.py --range "${BASE_SHA}...${GITHUB_SHA}"
+    - run: python scripts/ci/validate_data.py --range "${BASE_SHA}...${GITHUB_SHA}"
+release-candidate:
+    - uses: actions/upload-artifact@v7
+"""
+        promotion_workflow = """name: Promote release candidate
+workflow_dispatch:
+  inputs:
+    source_run_id:
+    confirmation:
+    - uses: actions/download-artifact@v6
+    - run: python scripts/ci/release_manifest.py verify
+    - uses: actions/upload-artifact@v7
 """
         settings = {
             "schemaVersion": 1,
@@ -134,6 +150,8 @@ AI-Log
                 self.write(relative_path, json.dumps(settings))
             elif relative_path == ".github/workflows/repository-guard.yml":
                 self.write(relative_path, workflow)
+            elif relative_path == ".github/workflows/promote-candidate.yml":
+                self.write(relative_path, promotion_workflow)
             elif relative_path in context_artifacts:
                 self.write(relative_path, context_artifacts[relative_path])
             else:
@@ -177,6 +195,23 @@ AI-Log
 
         self.assertIn("Sensitive local file must not be present in repository scope: .env", output)
         self.assertIn("Trailing whitespace in whitespace.txt:1", output)
+
+    def test_all_guard_modes_skip_raw_data_payload_content(self) -> None:
+        self.create_valid_default_fixture()
+        self.git("commit", "-m", "valid fixture")
+        token = "ghp_" + "a" * 26 + "123456"
+        self.write("data/1.000001.txt", f"TOKEN={token}\n")
+        self.git("add", "data/1.000001.txt")
+
+        self.assertEqual([], guard.validate_default(self.root))
+        self.assertEqual([], guard.validate_staged(self.root))
+
+        self.git("commit", "-m", "add raw data payload")
+        head = self.git("rev-parse", "HEAD")
+        parent = self.git("rev-parse", "HEAD^")
+        errors: list[str] = []
+        guard.validate_range_scope(self.root, f"{parent}...{head}", errors)
+        self.assertEqual([], errors)
 
     def test_default_scope_requires_context_pack_contract(self) -> None:
         self.create_valid_default_fixture()
