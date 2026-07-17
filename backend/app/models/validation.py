@@ -1,9 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 
+
 class ValidationRequest(BaseModel):
     procedure_id: str = Field(..., description="Procedure ID")
     form_data: Dict[str, Any] = Field(..., description="Form fields content")
+
 
 class Finding(BaseModel):
     field: Optional[str] = None
@@ -12,6 +14,7 @@ class Finding(BaseModel):
     fix_suggestion: Optional[str] = None
     rule_id: str
     source_ref: Optional[str] = None
+
 
 class ValidationResponse(BaseModel):
     procedure_id: str

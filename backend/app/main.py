@@ -6,7 +6,7 @@ from app.routers import health, procedures, intake, validation
 app = FastAPI(
     title="AI Procedure Copilot API",
     description="Backend API for AI-guided public service procedures",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Configure CORS for frontend integration
