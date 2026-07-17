@@ -1,19 +1,25 @@
 # Deployment contract
 
-> Trạng thái: D-005 scaffold đã có; D-010 đề xuất application CI và provider-neutral release artifact. Live deploy vẫn `Proposed — chưa provision`.
+> Trạng thái: D-005 scaffold đã có; D-006 và D-012 đã được peer chấp thuận cho target backend-only production-disabled. Live deploy vẫn **chưa provision** cho đến khi billing/IAM/local/candidate smoke đạt.
 >
-> Decision liên quan: D-005 (`Accepted`, scaffold), D-008 (`Accepted`, web-first), D-006 (`Proposed`, capability/deploy target) và D-010 (`Proposed`, CI/release artifact)
+> Decision liên quan: D-005 (`Accepted`, scaffold), D-008 (`Accepted`, web-first), D-006 (`Accepted`, capability/deploy target), D-010 (`Proposed`, CI/release artifact) và D-012 (`Accepted`, Cloud Run backend-only)
 >
 > Người phối hợp tạm thời: `TBD` theo Task Record deploy
 
 Tài liệu này mô tả topology đề xuất và gate để tạo CD thật. `frontend/` và `backend/` đã có scaffold theo D-005, CI có thể sinh release candidate theo D-010, nhưng chưa có cloud project, public URL, environment, secret hoặc live deploy workflow.
+
+## Đề xuất Cloud Run backend-only
+
+D-012 thêm một đường deploy **backend-only** để tạo public demo API, không thay frontend path, CI/CD hay D-006. Candidate dùng Cloud Run và Artifact Registry cùng `asia-southeast1`, service `vngov-api`, runtime service account không có role/secret, public demo access và production-disabled mode. Trong mode này `/health` phải `degraded`, procedure catalog là `unavailable`, và mọi luồng nghiệp vụ fail-closed — không có fixture, RAG, LLM, database hay dữ liệu pháp lý.
+
+D-006 và D-012 đã có peer confirmation. Chỉ provision khi billing/credit đúng project, IAM tối thiểu và local/container smoke pass. Runbook thao tác thủ công, candidate không traffic và rollback nằm tại [Cloud Run backend-only runbook](../runbooks/cloud-run-backend.md).
 
 ## Topology đề xuất
 
 | Hạng mục | Giá trị đề xuất | Trạng thái / điều kiện |
 | --- | --- | --- |
 | Standalone web app/widget | Web UI + Web Component/iframe trên public web host | D-005 có frontend scaffold; widget, host/domain vẫn D-006 `Proposed` |
-| Backend/API | FastAPI trên hosting theo Task Record deploy | D-005 có backend scaffold; host/runtime production vẫn D-006 `Proposed` |
+| Backend/API | FastAPI trên Cloud Run theo D-012; production-disabled | D-012 `Accepted`; project/image/URL chỉ được ghi sau candidate smoke |
 | Database/vector | Neon PostgreSQL + pgvector | D-006 `Proposed`; schema/migration `TBD` |
 | Demo environment | Một public web URL + API URL | Bắt buộc theo đề; hiện chưa tồn tại |
 | Preview environment | `TBD` | Chỉ tạo nếu phục vụ review nhanh hơn chi phí vận hành |
@@ -31,14 +37,14 @@ Tài liệu này mô tả topology đề xuất và gate để tạo CD thật. 
 
 ## Secret và quyền
 
-- Chỉ đưa giá trị thật vào secret store của Vercel/Render/Neon sau khi D-006 được Accepted và Task Record deploy được claim.
+- Chỉ đưa giá trị thật vào secret store của provider đã được peer chấp thuận sau khi D-006 được Accepted và Task Record deploy được claim. D-012 không tạo secret store vì runtime không cần secret.
 - Repo chỉ lưu tên biến/placeholder vô hại trong `.env.example`; không dán secret vào Issue/PR/prompt/log.
 - Deploy/database token dùng quyền tối thiểu và tách environment nếu nền tảng hỗ trợ.
 - Provider/model cụ thể, billing owner và quota đều `TBD`.
 
 ## Gate trước application CI/CD
 
-1. D-006 capability/deploy target được peer xác nhận ở phạm vi cần triển khai.
+1. D-006 capability/deploy target **và D-012 backend-only** được peer xác nhận ở phạm vi cần triển khai.
 2. Scaffold hiện có chạy local; install/lint/test/build commands có evidence trên worktree sạch.
 3. API/schema/rule tests tối thiểu chạy trong application CI; trước public deploy phải mở rộng thành ít nhất 30 golden cases theo D-006.
 4. Hosting projects, secret names, environment ownership, CORS/CSP và rollback được ghi trong Task Record/Decision.
@@ -66,6 +72,7 @@ Tài liệu này mô tả topology đề xuất và gate để tạo CD thật. 
 
 - Runtime versions đã kiểm chứng và install/build/start commands có evidence.
 - Project IDs, regions, domains và public URLs.
+- Billing account/credit ownership, Cloud Run revision, Artifact Registry image digest và rollback target cho D-012.
 - Database schema/migration/seed/reset commands.
 - Secret names bổ sung ngoài `.env.example` hiện có.
 - Observability, quotas, retention và chi phí.
