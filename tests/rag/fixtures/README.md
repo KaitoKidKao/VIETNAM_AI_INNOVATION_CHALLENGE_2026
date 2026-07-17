@@ -26,3 +26,17 @@ python scripts/data/validate_chunking_fixtures.py --verify-raw
 ```
 
 Strict validation does not print raw text. A passing validator does not mean that legal/procedure labels are approved; K1 review is still mandatory.
+
+## Phase 2 parser evaluation
+
+The deterministic normalizer/parser can be evaluated locally without committing raw
+content or generated sections:
+
+```powershell
+python scripts/data/evaluate_chunking_parser.py
+```
+
+Use `--output artifacts/chunking/phase2-sections.jsonl` only when a local parsed
+artifact is needed. The CLI rejects output paths outside the ignored `artifacts/`
+directory. Phase 1 annotations remain `needs_review`, so the reported boundary F1
+is diagnostic until K1 confirms the labels.
