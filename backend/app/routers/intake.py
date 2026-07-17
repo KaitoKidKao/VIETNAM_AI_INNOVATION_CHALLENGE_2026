@@ -4,6 +4,7 @@ from app.services.procedure_service import PROCEDURES_DB
 
 router = APIRouter(prefix="/v1")
 
+
 @router.post("/intake/turn", response_model=IntakeResponse)
 def intake_turn(request: IntakeRequest):
     if not request.messages:
@@ -27,7 +28,7 @@ def intake_turn(request: IntakeRequest):
             message="Xin chào! Tôi có thể hỗ trợ bạn chuẩn bị hồ sơ cho các thủ tục hành chính sau: Đăng ký khai sinh, Đăng ký thường trú, hoặc Đăng ký thành lập hộ kinh doanh. Bạn đang cần thực hiện thủ tục nào?",
             trust_state="need_more_information",
             required_clarifications=["procedure_selection"],
-            sources=[]
+            sources=[],
         )
 
     proc_name = PROCEDURES_DB[detected_id]["name"]
@@ -36,9 +37,11 @@ def intake_turn(request: IntakeRequest):
         message=f"Tôi đã nhận diện nhu cầu làm thủ tục: **{proc_name}**. Để hướng dẫn chính xác nhất, bạn có thể trả lời một số câu hỏi sau không?",
         trust_state="need_more_information",
         required_clarifications=["jurisdiction_detail", "relationship_to_subject"],
-        sources=[{
-            "title": "Cổng Dịch vụ công Quốc gia",
-            "url": "https://dichvucong.gov.vn",
-            "type": "official_portal"
-        }]
+        sources=[
+            {
+                "title": "Cổng Dịch vụ công Quốc gia",
+                "url": "https://dichvucong.gov.vn",
+                "type": "official_portal",
+            }
+        ],
     )

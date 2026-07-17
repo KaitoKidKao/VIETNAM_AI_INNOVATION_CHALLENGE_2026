@@ -2,9 +2,13 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Any
 from app.models.common import Citation
 
+
 class ChecklistRequest(BaseModel):
     procedure_id: str = Field(..., description="Procedure ID")
-    clarification_answers: Dict[str, Any] = Field(default_factory=dict, description="Answers to clarifying questions")
+    clarification_answers: Dict[str, Any] = Field(
+        default_factory=dict, description="Answers to clarifying questions"
+    )
+
 
 class ChecklistItem(BaseModel):
     id: str
@@ -13,12 +17,14 @@ class ChecklistItem(BaseModel):
     description: str
     citations: List[Citation]
 
+
 class Step(BaseModel):
     step_number: int
     title: str
     description: str
     processing_time: str
     fees: str
+
 
 class ChecklistResponse(BaseModel):
     procedure_id: str

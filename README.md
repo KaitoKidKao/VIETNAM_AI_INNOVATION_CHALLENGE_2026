@@ -8,7 +8,7 @@
 - Bản demo/release ổn định: `main`
 - Đề bài và ba MVP hiện hành: đã chốt tại [Project Context](docs/ai/PROJECT_CONTEXT.md) theo D-007
 - Delivery surface: web-first theo D-008 — standalone web app, widget/iframe và headless API; không có mobile/native deliverable
-- D-005 đã chấp thuận scaffold Next.js/FastAPI; RAG, trust policy, widget hoàn chỉnh và deploy topology vẫn `Proposed` trong D-006, chưa provision
+- D-005 đã chấp thuận scaffold Next.js/FastAPI; D-010 đề xuất fast CI và provider-neutral release artifact. RAG, trust policy, widget hoàn chỉnh và live deploy topology vẫn `Proposed` trong D-006, chưa provision
 - AI Log đa-agent: prompt-only, local source binding và commit trailers theo D-009; không lưu transcript/session đầy đủ
 - Nơi theo dõi công việc: Task Record cục bộ; GitHub Issue chỉ được tạo sau khi team chọn publish
 - Bootstrap nền đã được merge qua PR #1 và #2; workflow guard có trong `main`, nhưng run status, labels, branch protection và required checks chưa được xác minh bằng quyền GitHub hợp lệ
@@ -68,7 +68,7 @@ dev (demo candidate) -> PR/release check -> main (stable demo, khi được publ
 
 ## Quality gate
 
-`repository-guard` là CI guard hiện tại: nó kiểm tra bootstrap artifacts, Markdown links nội bộ, file policy và contract CI bằng Python standard library. Workflow đã có trong `main`, nhưng trạng thái run/required check chưa được xác minh; luôn chạy local trước handoff:
+`repository-guard` kiểm tra bootstrap artifacts, Markdown links nội bộ, file policy, AI Log history và application checks theo vùng diff. Payload `data/**` không bị content-scan trong fast path; data metadata được kiểm riêng. Luôn chạy local trước handoff:
 
 ```powershell
 python scripts/ci/validate_repo.py
@@ -88,11 +88,12 @@ Trước khi commit hoặc publish sau này, dùng scope Git-aware phù hợp:
 ```powershell
 python scripts/ci/validate_repo.py --staged
 python scripts/ci/validate_repo.py --range dev...HEAD
+python scripts/ci/validate_data.py --range dev...HEAD
 ```
 
 Các lệnh chỉ báo file/line; không in giá trị token/secret. `.env` hợp lệ khi bị Git ignore, nhưng sẽ bị chặn nếu được stage hoặc nằm trong phạm vi Git cần kiểm tra.
 
-Chỉ sau khi xác minh workflow chạy xanh trên branch đích và branch protection đã áp dụng thì mới được coi `repository-guard` là required status check. Issue scaffold đầu tiên vẫn phải bổ sung lint/test/build CI riêng cho stack thực tế; CD chỉ được bật sau khi [Deployment contract](docs/ai/DEPLOYMENT.md) hoàn tất. Không có hướng dẫn nào ở đây tự tạo Issue, PR, push hoặc thay đổi repository settings.
+Chỉ sau khi xác minh workflow chạy xanh trên branch đích và branch protection đã áp dụng thì mới được coi `repository-guard` là required status check. `dev` có thể sinh release candidate checksum-verified; promote trên `main` là thủ công và chưa phải deploy thật. Live CD chỉ được bật sau khi [Deployment contract](docs/ai/DEPLOYMENT.md), D-010 và provider/secret/rollback contract được peer xác nhận. Không có hướng dẫn nào ở đây tự tạo Issue, PR, push hoặc thay đổi repository settings.
 
 Xem [GitHub branch rules](.github/BRANCH_RULES.md), [labels](.github/LABELS.md), [repository settings](.github/repository-settings.json), và templates trong [`.github/`](.github/).
 
