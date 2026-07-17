@@ -1,80 +1,63 @@
-# Kiến trúc tối thiểu
+# Kiến trúc tối thiểu — AI Procedure Copilot
 
-> Trạng thái: `TBD — xác nhận trong 90 phút đầu`
+> Trạng thái: Active
 >
-> Cập nhật gần nhất: `TBD`
-> Decision liên quan: `TBD`
+> Cập nhật gần nhất: 2026-07-17
+> Decision liên quan: D-005
 
-Tài liệu này mô tả kiến trúc đang được team chấp thuận, không phải nơi để đề xuất ngầm một stack mới. Khi chưa có quyết định, để `TBD` và tạo Task Record/Decision phù hợp; chỉ tạo Issue sau khi team chọn publish.
+Tài liệu này mô tả chi tiết kiến trúc đang triển khai cho dự án AI Procedure Copilot.
 
 ## Mục tiêu kiến trúc
 
 - Phục vụ một demo MVP end-to-end đáng tin cậy trong 48 giờ.
-- Tối ưu cho ranh giới rõ ràng, thay đổi độc lập và fallback dễ diễn tập.
-- Tránh dependency, service và abstraction không trực tiếp phục vụ demo.
+- Tách biệt rõ ràng giữa Frontend (giao diện, widget) và Backend (quy tắc kiểm tra deterministic, gọi LLM).
+- Dễ dàng chạy và xác thực độc lập dưới local.
 
 ## Tổng quan hệ thống
 
 ```text
-[User / Judge]
-       |
-       v
-[TBD: UI / input] --> [TBD: application/API] --> [TBD: AI/model or rules]
-                              |                         |
-                              v                         v
-                       [TBD: storage/data]       [TBD: output/result]
+       [Người dùng / Giám khảo]
+                  |
+                  v
+       [Web FE (Next.js - Port 3000)]
+                  |
+                  |  (REST API / JSON)
+                  v
+       [FastAPI Backend - Port 8000]
+         /        |        \
+        v         v         v
+ [RAG Store] [Rule Engine] [LLM Provider]
 ```
-
-Thay sơ đồ này bằng các thành phần thực tế sau khi team chốt MVP. Mỗi mũi tên phải có contract rõ ràng hoặc link tới Decision Log.
 
 ## Thành phần và boundary
 
 | Thành phần | Trách nhiệm | Input / output | Owner tạm thời / Task Record | Rủi ro |
 | --- | --- | --- | --- | --- |
-| `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-| `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
-
-Owner chỉ điều phối boundary được ghi trong Task Record, không tạo quyền sở hữu cố định đối với thành phần.
+| **Web FE** | Giao diện chat hướng dẫn, điền form động, hiển thị checklist và cảnh báo lỗi. Cung cấp file nhúng widget. | Input: Tương tác người dùng. Output: Gọi API và hiển thị kết quả. | Antigravity / `local-20260717-scaffold-vaic` | CSS conflict nếu nhúng trực tiếp, được giảm thiểu bằng iframe / Web Component. |
+| **FastAPI Backend** | Tiếp nhận câu hỏi, điều phối luồng (intent clarification, retrieval, deterministic rule checking, LLM response policy). | Input: REST Request JSON. Output: JSON chứa checklist/findings/citations. | Antigravity / `local-20260717-scaffold-vaic` | Lỗi timeout từ mô hình LLM bên ngoài, được xử lý bằng retry và error mapping. |
+| **Rule Engine** | Kiểm tra lỗi kê khai (thiếu trường, sai định dạng, mâu thuẫn dữ liệu) một cách deterministic dựa trên schema. | Input: Dữ liệu form. Output: Danh sách findings (lỗi đỏ/vàng/xanh). | Antigravity / `local-20260717-scaffold-vaic` | Schema quá phức tạp cho 3 thủ tục, được giảm thiểu bằng cách tối giản form schema theo đúng pháp lý. |
 
 ## Contracts và tích hợp
 
 | Boundary | Producer | Consumer | Contract/version | Validation | Fallback | Decision |
 | --- | --- | --- | --- | --- | --- | --- |
-| `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` | `TBD` |
+| `/v1/procedures` | Backend | Frontend | JSON list of procedures | Schema validation | Static fallback lists | D-005 |
+| `/v1/intake/turn` | Backend | Frontend | JSON turn session data | Schema validation | Trả lời lỗi hệ thống | D-005 |
+| `/v1/applications/validate` | Backend | Frontend | Form payload / Findings | Deterministic rule checking | Trả về thông báo thành công mặc định | D-005 |
 
-Quy tắc cho shared contract:
+### API Routes chi tiết
 
-- Contract phải chỉ rõ schema/input-output, lỗi có thể nhìn thấy và owner tạm thời của Task Record liên quan.
-- Không sửa contract đã được consumer dùng mà không có Decision Log và peer confirmation.
-- Ưu tiên compatibility adapter hoặc feature flag nhỏ khi demo đang phụ thuộc vào contract cũ.
-
-## Data, AI và runtime
-
-| Hạng mục | Lựa chọn | Giới hạn / giả định | Fallback | Quyết định |
-| --- | --- | --- | --- | --- |
-| Data source | `TBD` | `TBD` | `TBD` | `TBD` |
-| Model/provider | `TBD` | `TBD` | `TBD` | `TBD` |
-| Storage/cache | `TBD` | `TBD` | `TBD` | `TBD` |
-| Hosting/runtime | `TBD` | `TBD` | `TBD` | `TBD` |
-
-Không đưa secret, raw credentials hoặc dữ liệu nhạy cảm vào tài liệu này. Xem `SECRETS_AND_DATA.md`.
+- **`GET /health`**: Smoke check kiểm tra trạng thái hoạt động của Backend.
+- **`GET /v1/procedures`**: Trả về danh sách 3 procedure packs đang được hỗ trợ (khai sinh, thường trú, hộ kinh doanh).
+- **`POST /v1/intake/turn`**: Nhận câu hỏi/câu trả lời của phiên hội thoại để xác định nhu cầu hoặc hỏi làm rõ (clarification).
+- **`POST /v1/procedures/{id}/checklist`**: Nhận câu trả lời làm rõ, trả về danh mục hồ sơ giấy tờ cần chuẩn bị và quy trình chi tiết cá nhân hóa.
+- **`POST /v1/applications/validate`**: Nhận dữ liệu kê khai biểu mẫu, chạy rule engine để phát hiện trường thiếu, sai định dạng hoặc mâu thuẫn, trả về danh sách cảnh báo đỏ/vàng/xanh kèm cách sửa.
 
 ## Chạy, quan sát và khôi phục
 
 | Việc | Lệnh hoặc bước đã kiểm chứng | Owner tạm thời / Task Record | Ghi chú |
 | --- | --- | --- | --- |
-| Cài dependencies | `TBD` | `TBD` | `TBD` |
-| Chạy local | `TBD` | `TBD` | `TBD` |
-| Chạy checks | `TBD` | `TBD` | `TBD` |
-| Deploy/demo | `TBD` | `TBD` | `TBD` |
-| Rollback/fallback | `TBD` | `TBD` | `TBD` |
-
-Mọi thay đổi deploy hoặc runtime ảnh hưởng demo cần được ghi quyết định, diễn tập tối thiểu một lần và có rollback/fallback trước scope freeze.
-
-## Thay đổi kiến trúc
-
-1. Tạo Task Record/Context Pack với boundary, consumer bị ảnh hưởng, migration/compatibility và cách kiểm chứng; publish thành Issue nếu cần remote coordination.
-2. Ghi Decision Log cho shared API, dependency, deploy hoặc demo flow.
-3. Nhận peer confirmation trước khi implement hoặc merge thay đổi `risk:shared`.
-4. Cập nhật bảng contracts, lệnh chạy, `DEMO.md` và handoff; cập nhật PR khi task đã được publish.
+| Cài dependencies | Backend: `pip install -r requirements.txt`<br>Frontend: `npm install` | Antigravity / `local-20260717-scaffold-vaic` | Chạy tại các thư mục tương ứng |
+| Chạy local | Backend: `uvicorn main:app --port 8000 --reload`<br>Frontend: `npm run dev` | Antigravity / `local-20260717-scaffold-vaic` | Backend chạy cổng 8000, Frontend chạy cổng 3000 |
+| Chạy checks | `python scripts/ci/validate_repo.py` | Antigravity / `local-20260717-scaffold-vaic` | Kiểm tra tính hợp lệ của repo |
+| Rollback/fallback | Reset git commit / Hạ cấp xuống mock UI | Antigravity / `local-20260717-scaffold-vaic` | Dùng Git để rollback |
