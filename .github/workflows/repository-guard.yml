@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -35,8 +37,25 @@ jobs:
       - name: Test repository guard
         run: python -m unittest discover -s tests/ci -p "test_*.py"
 
+      - name: Test AI Log
+        run: python -m unittest discover -s tests/ai_log -p "test_*.py"
+
       - name: Test design audit wrapper
         run: node --test tests/design/*.mjs
 
       - name: Validate repository bootstrap
         run: python scripts/ci/validate_repo.py
+
+      - name: Validate changed range and AI Log history
+        if: github.event_name != 'workflow_dispatch'
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          BASE_SHA="${PR_BASE_SHA:-$PUSH_BEFORE_SHA}"
+          if git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            python scripts/ci/validate_repo.py --range "${BASE_SHA}...${GITHUB_SHA}"
+          else
+            echo "AI Log range check skipped: base commit is unavailable."
+          fi

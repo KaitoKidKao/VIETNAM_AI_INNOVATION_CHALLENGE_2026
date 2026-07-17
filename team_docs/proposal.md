@@ -3,7 +3,7 @@
 > Đề bài: **AI-guided public service procedures**
 > Tổ chức: **National Institute for Digital Technologies and Digital Transformation (NIDit)**
 > Lĩnh vực: **Chính phủ Thông minh**
-> Trạng thái: D-005 có scaffold source; ba MVP theo D-007, web-first theo D-008 đã chốt; trust/RAG/deploy D-006 đang `Proposed`
+> Trạng thái: ba MVP theo D-007 và web-first delivery theo D-008 đã chốt; D-005 có scaffold source, còn kiến trúc trust/RAG/deploy D-006 đang `Proposed`
 > Source freeze: **17/07/2026**
 
 Delivery surface theo D-008 là **web-first**: standalone web app trên public URL, widget/iframe nhúng portal và headless API. MVP không có native mobile, PWA install flow hoặc app-store artifact; integration với Cổng DVCQG thật vẫn cần sandbox và authorization.
@@ -55,7 +55,7 @@ Mỗi thủ tục phải có cùng độ sâu: clarification tree, checklist, qu
 
 ### Sản phẩm và integration
 
-Standalone Next.js UI và Web Component bọc iframe gọi FastAPI qua REST. Runtime tách intent/clarification, retrieval, checklist, rule validation, citation/freshness/escalation và provider-neutral LLM adapter. Procedure packs, metadata nguồn, schema/rules, chunks và golden cases được đề xuất lưu trong Neon PostgreSQL + pgvector. Offline ingestion luôn qua human review.
+D-005 đã tạo scaffold Next.js/FastAPI; target runtime vẫn đề xuất tách intent/clarification, retrieval, checklist, rule validation, citation/freshness/escalation và provider-neutral LLM adapter. Web Component bọc iframe, procedure packs đã review, metadata nguồn, schema/rules, chunks, golden cases và storage/vector release đều cần evidence triển khai riêng. Offline ingestion luôn qua human review.
 
 Public integration gồm widget và headless API; portal hiện hữu không yêu cầu người dân cài ứng dụng mới. Topology deploy đề xuất: Vercel (UI/widget), Render (API), Neon (database). Chưa có dịch vụ, URL, model/provider hoặc KPI thực đo nào được provision/khẳng định ở thời điểm proposal.
 
@@ -171,7 +171,7 @@ review_status, checksum, conflict_fallback_sources
 
 > **Trạng thái:** working proposal ở mức capability, chưa phải kiến trúc đã triển khai. Việc chọn framework, database, model provider và hosting được tách khỏi thiết kế này và vẫn `TBD` cho đến khi có Decision được peer xác nhận.
 
-Kiến trúc mới tách rõ bốn vùng trách nhiệm: **Web FE**, **BE / Trust & Orchestration**, **RAG / Knowledge** và **Memory / Security**. Web FE gồm standalone web app và widget/iframe dùng cùng headless API để tạo đường tích hợp portal trong tương lai. [`diagram_v3.mmd`](../../team_docs/diagram_v3.mmd) được dùng làm input cho API Gateway, PII Guard, LLM Gateway và redacted audit; các ví dụ thủ tục/scrape trong sơ đồ không thay ba MVP hoặc quy trình dữ liệu đã chốt. RAG chỉ lưu tri thức thủ tục công khai đã được duyệt; memory chỉ lưu trạng thái phiên/case của người dùng. Mô hình ngôn ngữ hỗ trợ hội thoại và giải thích, không quyết định hồ sơ hợp lệ.
+Kiến trúc mới tách rõ bốn vùng trách nhiệm: **Web FE**, **BE / Trust & Orchestration**, **RAG / Knowledge** và **Memory / Security**. Web FE gồm standalone web app và widget/iframe dùng cùng headless API để tạo đường tích hợp portal trong tương lai. [`diagram_v3.mmd`](diagram_v3.mmd) được dùng làm input cho API Gateway, PII Guard, LLM Gateway và redacted audit; các ví dụ thủ tục/scrape trong sơ đồ không thay ba MVP hoặc quy trình dữ liệu đã chốt. RAG chỉ lưu tri thức thủ tục công khai đã được duyệt; memory chỉ lưu trạng thái phiên/case của người dùng. Mô hình ngôn ngữ hỗ trợ hội thoại và giải thích, không quyết định hồ sơ hợp lệ.
 
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{"actorBkg":"#F8FAFC","actorBorder":"#64748B","actorTextColor":"#0F172A","signalColor":"#334155","signalTextColor":"#0F172A","labelBoxBkgColor":"#FFF7ED","labelBoxBorderColor":"#FB923C","labelTextColor":"#7C2D12","noteBkgColor":"#FEFCE8","noteBorderColor":"#EAB308","noteTextColor":"#422006","activationBkgColor":"#DBEAFE","activationBorderColor":"#2563EB"},"sequence":{"mirrorActors":true,"useMaxWidth":false,"wrap":true,"diagramMarginX":20,"diagramMarginY":10,"actorMargin":50,"width":170,"height":55,"boxMargin":10,"boxTextMargin":5,"noteMargin":10,"messageMargin":32}}}%%
@@ -339,7 +339,7 @@ Long-term memory dùng envelope encryption với key riêng theo user/case. Khi 
 | `GET /v1/procedures` | Danh sách pack/version đang phục vụ | review/freshness metadata |
 | `GET /health` | Smoke check deploy | redacted service status |
 
-Mọi response quy phạm phải có `procedure_version`, `source_refs`, `last_verified_at` và trust state. Error schema, auth/rate limit, CORS và OpenAPI examples được chốt khi scaffold; không được suy đoán từ proposal.
+Mọi response quy phạm mục tiêu phải có `procedure_version`, `source_refs`, `last_verified_at` và trust state. Error schema, auth/rate limit, CORS và OpenAPI examples cần được chốt qua Task Record/peer review; không được suy đoán từ proposal hoặc scaffold.
 
 Các logical contract nội bộ gồm `SessionContext`, `CaseSnapshot`, `RetrievalQuery`, `RetrievalEvidence` và `GroundedResponse`. Chúng làm rõ boundary, không bổ sung hoặc thay đổi public API trên.
 
@@ -431,7 +431,7 @@ Nguyên tắc ưu tiên: accuracy/trust và vertical slice chạy thật trướ
 | 34–42h | Standalone web app, widget embed, public deploy, portal-container compatibility và accessibility. |
 | 42–48h | Scope freeze, tests, tài liệu, demo rehearsal và fallback. |
 
-Đây là kế hoạch proposal; task breakdown/owner cụ thể chỉ được tạo sau khi D-006 được peer xác nhận.
+Đây là kế hoạch proposal; D-005 đã có scaffold nhưng task breakdown/owner cho capability D-006 chỉ được claim sau peer review phù hợp.
 
 ### Sáu lane ngang hàng
 
@@ -487,11 +487,11 @@ Proposal không tuyên bố đã có application code, model, public URL, cloud 
 
 ### Source-of-truth nội bộ
 
-- [Project Context](../ai/PROJECT_CONTEXT.md)
-- [Architecture](../ai/ARCHITECTURE.md)
-- [Decision Log](../ai/DECISIONS.md)
-- [Demo runbook](../ai/DEMO.md)
-- [Deployment contract](../ai/DEPLOYMENT.md)
-- [Secrets & Data policy](../ai/SECRETS_AND_DATA.md)
+- [Project Context](../docs/ai/PROJECT_CONTEXT.md)
+- [Architecture](../docs/ai/ARCHITECTURE.md)
+- [Decision Log](../docs/ai/DECISIONS.md)
+- [Demo runbook](../docs/ai/DEMO.md)
+- [Deployment contract](../docs/ai/DEPLOYMENT.md)
+- [Secrets & Data policy](../docs/ai/SECRETS_AND_DATA.md)
 
 `raw.md` được tham khảo như phân tích nội bộ cho SWOT/positioning, không phải nguồn pháp lý và không được sửa/stage/commit trong task này.

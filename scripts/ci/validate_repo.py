@@ -25,6 +25,7 @@ REQUIRED_PATHS = (
     "CLAUDE.md",
     ".cursor/rules/00-team-protocol.mdc",
     ".agents/context-packs/TEMPLATE.md",
+    ".agents/context-packs/README.md",
     ".agents/playbooks/claim-task.md",
     ".agents/playbooks/demo-readiness.md",
     ".agents/playbooks/impeccable-audit.md",
@@ -32,6 +33,11 @@ REQUIRED_PATHS = (
     ".agents/playbooks/prepare-context.md",
     ".agents/playbooks/review-merge.md",
     ".agents/playbooks/start-worktree.md",
+    ".githooks/commit-msg",
+    ".githooks/post-commit",
+    ".githooks/pre-commit",
+    ".githooks/pre-merge-commit",
+    ".githooks/prepare-commit-msg",
     ".github/LABELS.md",
     ".github/BRANCH_RULES.md",
     ".github/repository-settings.json",
@@ -49,9 +55,15 @@ REQUIRED_PATHS = (
     "docs/ai/SECRETS_AND_DATA.md",
     "docs/ai/TEAM.md",
     "docs/ai/TEAM_PROTOCOL.md",
+    "evidence/ai-log/README.md",
+    "evidence/ai-log/policy.json",
+    "evidence/ai-log/schemas/commit-evidence.schema.json",
+    "evidence/ai-log/schemas/prompt-event.schema.json",
+    "scripts/ai_log/ai_log.py",
     "scripts/ci/validate_repo.py",
     "scripts/design/impeccable-audit.mjs",
     "scripts/github/sync-repo-settings.ps1",
+    "team_docs/phancong.md",
 )
 TEXT_EXTENSIONS = {
     ".cmd",
@@ -119,6 +131,7 @@ CONTEXT_ARTIFACT_FRAGMENTS = {
         "Prompt Intake Gate",
         "## Mục tiêu, success criteria, constraints và stopping conditions",
         "- Constraints:",
+        "AI-Log",
     ),
     ".agents/context-packs/TEMPLATE.md": (
         "## Identity",
@@ -128,6 +141,7 @@ CONTEXT_ARTIFACT_FRAGMENTS = {
         "## Dependencies và resource claim",
         "## Kiểm chứng và handoff",
         "- Constraints:",
+        "AI-Log",
     ),
     ".agents/playbooks/claim-task.md": (
         "Prompt Intake Gate",
@@ -150,6 +164,66 @@ CONTEXT_ARTIFACT_FRAGMENTS = {
         "advisory",
         "native skill",
     ),
+    "evidence/ai-log/README.md": (
+        "onboard",
+        "doctor --strict",
+        ".ai-log/hooks",
+        "không tự push",
+    ),
+}
+
+AI_LOG_TOOLS = {"codex", "claude", "cursor", "antigravity"}
+AI_LOG_CAPTURE_STATUSES = {"complete", "warning", "no_new_prompt", "manual", "git_operation"}
+AI_LOG_FORBIDDEN_KEYS = {
+    "absolute_path",
+    "assistant_response",
+    "chain_of_thought",
+    "raw_session",
+    "session_path",
+    "source_path",
+    "system_prompt",
+    "tool_call",
+    "tool_output",
+    "transcript",
+}
+AI_LOG_TRAILER = re.compile(r"^AI-Log:\s*(log-[0-9a-f]{24})\s*$", re.MULTILINE)
+AI_LOG_EMAIL = re.compile(r"(?<![\w.+-])[\w.+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?![\w.-])")
+AI_LOG_IDENTIFIER = re.compile(r"(?<!\d)(?:\+?84\s?)?\d{10,12}(?!\d)")
+AI_LOG_USER_PATH = re.compile(r"(?i)(?:\b[A-Z]:\\Users\\[^\\\s]+|/(?:home|Users)/[^/\s]+)")
+AI_LOG_PROMPT_KEYS = {
+    "schema_version",
+    "record_type",
+    "prompt_id",
+    "occurred_at",
+    "captured_at",
+    "member_id",
+    "tool",
+    "event",
+    "prompt",
+    "prompt_preview",
+    "model",
+    "task_record",
+    "branch",
+    "workspace_fingerprint",
+    "source",
+    "sanitization",
+    "capture_warnings",
+}
+AI_LOG_COMMIT_KEYS = {
+    "schema_version",
+    "record_type",
+    "ai_log_id",
+    "created_at",
+    "member_id",
+    "branch",
+    "parent_commit",
+    "task_records",
+    "prompt_ids",
+    "tools",
+    "capture_status",
+    "warnings",
+    "operation",
+    "replaces_ai_log",
 }
 
 
@@ -361,6 +435,204 @@ def validate_impeccable_policy(root: Path, errors: list[str]) -> None:
         errors.append(".impeccable/config.json must not configure a native hook.")
 
 
+def ai_log_forbidden_key(value: object) -> str | None:
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if str(key).lower() in AI_LOG_FORBIDDEN_KEYS:
+                return str(key)
+            nested_key = ai_log_forbidden_key(child)
+            if nested_key:
+                return nested_key
+    elif isinstance(value, list):
+        for child in value:
+            nested_key = ai_log_forbidden_key(child)
+            if nested_key:
+                return nested_key
+    return None
+
+
+def validate_ai_log_policy(root: Path, errors: list[str]) -> None:
+    policy_path = root / "evidence/ai-log/policy.json"
+    try:
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        errors.append(f"Invalid AI Log policy JSON: {error}")
+        return
+
+    if policy.get("schemaVersion") != 1 or policy.get("format") != "prompt-only":
+        errors.append("AI Log policy must use schemaVersion 1 and prompt-only format.")
+    if set(policy.get("supportedTools", [])) != AI_LOG_TOOLS:
+        errors.append("AI Log policy must support Codex, Claude, Cursor and Antigravity equally.")
+    if policy.get("allowedEvents") != ["UserPrompt"]:
+        errors.append("AI Log policy may allow only UserPrompt events.")
+    if policy.get("captureFailure") != "warn-and-commit":
+        errors.append("AI Log capture failure policy must be warn-and-commit.")
+    enforcement = policy.get("historyEnforcement")
+    if not isinstance(enforcement, dict) or enforcement != {
+        "mode": "policy-presence",
+        "enabled": True,
+        "exemptMergeCommits": True,
+    }:
+        errors.append("AI Log history enforcement must use policy-presence and exempt merge commits.")
+
+    for relative_path in (
+        "evidence/ai-log/schemas/prompt-event.schema.json",
+        "evidence/ai-log/schemas/commit-evidence.schema.json",
+    ):
+        try:
+            schema = json.loads((root / relative_path).read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            errors.append(f"Invalid AI Log schema JSON: {relative_path}: {error}")
+            continue
+        if schema.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+            errors.append(f"AI Log schema must use JSON Schema 2020-12: {relative_path}")
+
+
+def validate_ai_log_records(root: Path, errors: list[str]) -> None:
+    members_root = root / "evidence/ai-log/members"
+    if not members_root.is_dir():
+        return
+    prompt_ids: set[str] = set()
+    commit_records: list[tuple[Path, dict[str, object]]] = []
+    prompt_pattern = re.compile(
+        r"^evidence/ai-log/members/(?P<member>[a-z0-9][a-z0-9-]{1,63})/prompts/"
+        r"\d{4}-\d{2}/(?P<id>prompt-[0-9a-f]{24})\.json$"
+    )
+    commit_pattern = re.compile(
+        r"^evidence/ai-log/members/(?P<member>[a-z0-9][a-z0-9-]{1,63})/commits/"
+        r"(?P<id>log-[0-9a-f]{24})\.json$"
+    )
+
+    for path in members_root.rglob("*.json"):
+        relative_path = path.relative_to(root)
+        display_path = display(relative_path)
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            errors.append(f"Invalid AI Log record JSON: {display_path}")
+            continue
+        if not isinstance(record, dict):
+            errors.append(f"AI Log record must be a JSON object: {display_path}")
+            continue
+        forbidden_key = ai_log_forbidden_key(record)
+        if forbidden_key:
+            errors.append(f"AI Log record contains forbidden session content key in {display_path}: {forbidden_key}")
+
+        if record.get("record_type") == "prompt_event":
+            match = prompt_pattern.fullmatch(display_path)
+            prompt_id = str(record.get("prompt_id", ""))
+            if not match or match.group("id") != prompt_id or match.group("member") != record.get("member_id"):
+                errors.append(f"AI Log prompt record path/identity mismatch: {display_path}")
+            if record.get("schema_version") != 1 or record.get("event") != "UserPrompt":
+                errors.append(f"AI Log may store only schema v1 UserPrompt records: {display_path}")
+            if set(record) != AI_LOG_PROMPT_KEYS:
+                errors.append(f"AI Log prompt record does not match the prompt-only schema: {display_path}")
+            if record.get("tool") not in AI_LOG_TOOLS:
+                errors.append(f"AI Log prompt record uses an unsupported tool: {display_path}")
+            if not isinstance(record.get("prompt"), str) or not record.get("prompt"):
+                errors.append(f"AI Log prompt record must contain sanitized prompt text: {display_path}")
+            elif any(pattern.search(record["prompt"]) for pattern in (AI_LOG_EMAIL, AI_LOG_IDENTIFIER, AI_LOG_USER_PATH)):
+                errors.append(f"AI Log prompt record contains unredacted sensitive data: {display_path}")
+            source = record.get("source")
+            if not isinstance(source, dict) or set(source) != {"session_hash", "adapter", "adapter_version"}:
+                errors.append(f"AI Log source metadata must be hash-only: {display_path}")
+            if prompt_id in prompt_ids:
+                errors.append(f"Duplicate AI Log prompt ID: {prompt_id}")
+            capture_warnings = record.get("capture_warnings")
+            if not isinstance(capture_warnings, list) or any(
+                not re.fullmatch(r"[a-z0-9_]+", str(warning)) for warning in capture_warnings
+            ):
+                errors.append(f"AI Log prompt warnings must be safe machine codes: {display_path}")
+            prompt_ids.add(prompt_id)
+        elif record.get("record_type") == "commit_evidence":
+            match = commit_pattern.fullmatch(display_path)
+            log_id = str(record.get("ai_log_id", ""))
+            if not match or match.group("id") != log_id or match.group("member") != record.get("member_id"):
+                errors.append(f"AI Log commit record path/identity mismatch: {display_path}")
+            if record.get("schema_version") != 1 or record.get("capture_status") not in AI_LOG_CAPTURE_STATUSES:
+                errors.append(f"Invalid AI Log commit evidence status: {display_path}")
+            if set(record) != AI_LOG_COMMIT_KEYS:
+                errors.append(f"AI Log commit record does not match the commit-evidence schema: {display_path}")
+            tools = record.get("tools")
+            if not isinstance(tools, list) or not set(tools).issubset(AI_LOG_TOOLS):
+                errors.append(f"Invalid AI Log commit evidence tools: {display_path}")
+            warnings = record.get("warnings")
+            if not isinstance(warnings, list) or any(
+                not re.fullmatch(r"[a-z0-9_]+", str(warning)) for warning in warnings
+            ):
+                errors.append(f"AI Log commit warnings must be safe machine codes: {display_path}")
+            commit_records.append((relative_path, record))
+        else:
+            errors.append(f"Unknown AI Log record type: {display_path}")
+
+    for relative_path, record in commit_records:
+        references = record.get("prompt_ids")
+        if not isinstance(references, list):
+            errors.append(f"AI Log commit prompt_ids must be an array: {display(relative_path)}")
+            continue
+        for prompt_id in references:
+            if prompt_id not in prompt_ids:
+                errors.append(f"AI Log commit references a missing prompt record: {display(relative_path)}")
+
+
+def validate_ai_log_history(root: Path, value: str, errors: list[str]) -> None:
+    base, range_head = parse_range(value)
+    commits_output = run_git(
+        root,
+        ["rev-list", "--reverse", f"{resolve_commit(root, base)}..{resolve_commit(root, range_head)}"],
+        "listing AI Log range commits",
+    )
+    for raw_commit in commits_output.splitlines():
+        commit = raw_commit.decode("ascii", errors="strict")
+        try:
+            policy = json.loads(
+                read_revision_file(root, commit, Path("evidence/ai-log/policy.json")).decode("utf-8")
+            )
+        except GuardError:
+            # A commit without the policy is legacy history.
+            continue
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            errors.append(f"Commit {commit[:12]} has an invalid AI Log policy.")
+            continue
+        enforcement = policy.get("historyEnforcement")
+        if not isinstance(enforcement, dict) or enforcement.get("mode") != "policy-presence":
+            errors.append(f"Commit {commit[:12]} has an unsupported AI Log history policy.")
+            continue
+        if enforcement.get("enabled") is not True:
+            continue
+        parents = run_git(
+            root,
+            ["rev-list", "--parents", "-n", "1", commit],
+            "reading AI Log commit parents",
+        ).decode("ascii", errors="strict").split()
+        if len(parents) > 2 and enforcement.get("exemptMergeCommits") is True:
+            continue
+        message = run_git(root, ["show", "-s", "--format=%B", commit], "reading AI Log commit trailers").decode(
+            "utf-8", errors="replace"
+        )
+        match = AI_LOG_TRAILER.search(message)
+        if not match:
+            errors.append(f"Commit {commit[:12]} is missing an AI-Log trailer.")
+            continue
+        log_id = match.group(1)
+        tree_paths = run_git(
+            root,
+            ["ls-tree", "-r", "--name-only", commit, "--", "evidence/ai-log/members"],
+            "locating AI Log commit evidence",
+        ).decode("utf-8", errors="replace").splitlines()
+        matches = [path for path in tree_paths if path.endswith(f"/commits/{log_id}.json")]
+        if len(matches) != 1:
+            errors.append(f"Commit {commit[:12]} AI-Log trailer does not resolve to exactly one record.")
+            continue
+        try:
+            record = json.loads(read_revision_file(root, commit, Path(matches[0])).decode("utf-8"))
+        except (GuardError, UnicodeDecodeError, json.JSONDecodeError):
+            errors.append(f"Commit {commit[:12]} has invalid AI Log commit evidence.")
+            continue
+        if record.get("ai_log_id") != log_id or record.get("capture_status") not in AI_LOG_CAPTURE_STATUSES:
+            errors.append(f"Commit {commit[:12]} has inconsistent AI Log evidence.")
+
+
 def validate_markdown_links(root: Path, relative_path: Path, text: str, errors: list[str]) -> None:
     for match in MARKDOWN_LINK.finditer(text):
         target = unquote(match.group("target").strip("<>"))
@@ -446,9 +718,11 @@ def validate_workflow_contract(root: Path, errors: list[str]) -> None:
         "repository-guard:",
         "contents: read",
         "python -m unittest discover -s tests/ci",
+        "python -m unittest discover -s tests/ai_log",
         "actions/setup-node@v4",
         "node --test tests/design/*.mjs",
         "python scripts/ci/validate_repo.py",
+        "--range \"${BASE_SHA}...${GITHUB_SHA}\"",
         "pull_request:",
         "workflow_dispatch:",
     )
@@ -463,6 +737,8 @@ def validate_default(root: Path) -> list[str]:
     validate_context_artifacts(root, errors)
     validate_repository_settings(root, errors)
     validate_impeccable_policy(root, errors)
+    validate_ai_log_policy(root, errors)
+    validate_ai_log_records(root, errors)
     validate_default_scope(root, errors)
     validate_workflow_contract(root, errors)
     return errors
@@ -477,6 +753,7 @@ def validate_staged(root: Path) -> list[str]:
 def validate_range(root: Path, value: str) -> list[str]:
     errors: list[str] = []
     validate_range_scope(root, value, errors)
+    validate_ai_log_history(root, value, errors)
     return errors
 
 
