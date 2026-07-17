@@ -5,7 +5,7 @@
 | **Product** | VNGov — AI Procedure Copilot cho thủ tục hành chính công |
 | **Version** | PRD v2 — MVP |
 | **Status** | Draft for build |
-| **Sources** | [`proposal.md`](./proposal.md) · [`prd-v1.md`](./prd-v1.md) · source freeze `17/07/2026` |
+| **Sources** | [`proposal.md`](./proposal.md) · source freeze `17/07/2026` |
 | **Owner (product)** | Duyen |
 | **Last updated** | 2026-07-17 |
 | **Audience** | PM, UX Designer, AI Engineer, Backend Engineer, QA |
@@ -16,18 +16,18 @@
 
 ## Assumptions
 
-Các thông tin dưới đây **không có** trong prompt/context gốc và được giả định hợp lý từ `proposal.md`, `prd-v1.md` và bối cảnh cuộc thi. Mỗi giả định cần được team xác nhận hoặc thay bằng Decision chính thức:
+Các thông tin dưới đây **không có** trong prompt/context gốc và được giả định hợp lý từ `proposal.md` và bối cảnh cuộc thi. Mỗi giả định cần được team xác nhận hoặc thay bằng Decision chính thức:
 
 | # | Hạng mục | Giả định | Căn cứ |
 | --- | --- | --- | --- |
 | A1 | Timeline | Build MVP trong **48 giờ hackathon** (Vietnam AI Innovation Challenge 2026), sau đó pilot 90 ngày | Kế hoạch 48h + pilot trong proposal |
 | A2 | Team size | ~6 người/lane ngang hàng: procedure research, data/grounding, AI/eval, backend/rules, frontend/widget, quality/deploy | Mục "Sáu lane ngang hàng" trong proposal |
 | A3 | Budget | Free/hobby tier cho hạ tầng demo (Vercel, Render, Neon đề xuất); chi phí LLM API ước tính < 50 USD cho hackathon + eval | Topology đề xuất trong proposal; chưa có Decision |
-| A4 | Model preference | Không khóa vendor; **provider-neutral LLM adapter**, 1 model chat mạnh tiếng Việt (GPT-4o-class hoặc Claude-class) cho MVP | prd-v1 §3; Decision model/provider vẫn `TBD` |
+| A4 | Model preference | Không khóa vendor; **provider-neutral LLM adapter**, 1 model chat mạnh tiếng Việt (GPT-4o-class hoặc Claude-class) cho MVP | Decision model/provider vẫn `TBD` |
 | A5 | Existing system | Chưa có hệ thống nào đang chạy; tích hợp Cổng DVCQG thật ngoài scope MVP (chỉ widget/headless API làm đường tích hợp) | Proposal §5, D-008 web-first |
 | A6 | Revenue | MVP không có mục tiêu doanh thu trực tiếp; business goal đo bằng pilot pathway và giá trị vận hành (giảm hồ sơ thiếu, giảm câu hỏi lặp) | Rubric Business Viability trong proposal |
 | A7 | Dữ liệu demo | 100% synthetic; không hồ sơ công dân thật trong demo/eval | Chính sách PII trong proposal §6 |
-| A8 | Ngôn ngữ | MVP chỉ tiếng Việt; đa ngôn ngữ là roadmap | Scope OUT trong prd-v1 |
+| A8 | Ngôn ngữ | MVP chỉ tiếng Việt; đa ngôn ngữ là roadmap | Scope ngoài MVP trong proposal |
 
 ---
 
@@ -883,4 +883,4 @@ Một **trust layer cho dịch vụ công**: mọi hướng dẫn thủ tục đ
 
 ---
 
-*PRD v2 mở rộng từ [`prd-v1.md`](./prd-v1.md) theo template 22 mục; nguồn sự thật về scope/trust model là [`proposal.md`](./proposal.md). Mọi thay đổi shared API / pack schema / demo flow cần Task Record + Decision Log theo team protocol. Các giá trị `TBD`/Assumption phải được chốt bằng Decision trước khi implement phần tương ứng.*
+*PRD v2 dùng template 22 mục; nguồn sự thật về scope/trust model là [`proposal.md`](./proposal.md). Mọi thay đổi shared API / pack schema / demo flow cần Task Record + Decision Log theo team protocol. Các giá trị `TBD`/Assumption phải được chốt bằng Decision trước khi implement phần tương ứng.*
