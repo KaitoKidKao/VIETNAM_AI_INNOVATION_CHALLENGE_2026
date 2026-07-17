@@ -449,7 +449,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="px-4 py-2 bg-[#2563EB] text-white text-sm font-semibold rounded-md hover:bg-[#1D4ED8] transition-all disabled:opacity-50"
+                className="px-4 py-2 bg-accent text-white text-sm font-semibold rounded-md hover:bg-accent-hover transition-all disabled:opacity-50"
               >
                 Gửi
               </button>
@@ -457,7 +457,7 @@ export default function Home() {
           </div>
 
           {/* Tab Content 2: Checklist display */}
-          <div className={`${activeLeftTab === "checklist" ? "flex" : "hidden"} flex-col flex-1 overflow-y-auto bg-white`}>
+          <div className={`${activeLeftTab === "checklist" ? "flex" : "hidden"} flex-col flex-1 overflow-y-auto bg-card-bg`}>
             <ChecklistSidebar checklist={checklist} activeField={activeField} />
           </div>
         </aside>
@@ -466,12 +466,12 @@ export default function Home() {
         <main
           className={`${
             activeMobileTab === "form" ? "flex" : "hidden"
-          } md:flex flex-col flex-1 bg-[#F8FAFC] overflow-y-auto p-6`}
+          } md:flex flex-col flex-1 bg-neutral-bg overflow-y-auto p-6`}
         >
           {checklist ? (
             <div className="max-w-xl mx-auto w-full space-y-6">
               {/* Form Sheet container */}
-              <div className="bg-white border border-border-slate rounded-lg p-6 shadow-sm">
+              <div className="bg-card-bg border border-border-slate rounded-lg p-6 shadow-sm">
                 <div className="border-b border-border-slate pb-4 mb-6">
                   <span className="text-[10px] font-bold text-accent tracking-wider uppercase block">TỜ KHAI ĐIỆN TỬ SƠ BỘ</span>
                   <h2 className="text-lg font-bold text-primary">{checklist.procedure_name}</h2>
@@ -580,12 +580,52 @@ export default function Home() {
               )}
             </div>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-white border border-border-slate rounded-lg">
-              <span className="text-4xl">📋</span>
-              <h2 className="text-base font-bold text-primary mt-4">Chưa có tờ khai nào được chọn</h2>
-              <p className="text-xs text-zinc-500 mt-2 max-w-xs">
-                Vui lòng nhấn chọn các nút thủ tục gợi ý nhanh trong khung chat, hoặc trò chuyện với trợ lý để bắt đầu lập hồ sơ.
+            <div className="flex-1 flex flex-col items-center justify-center p-8 bg-card-bg border border-border-slate rounded-lg max-w-2xl mx-auto w-full shadow-sm my-auto">
+              {/* Emblem / Logo Icon */}
+              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-950/30 text-accent mb-6">
+                <span className="text-3xl">🏛️</span>
+              </div>
+
+              {/* Title & Subtitle */}
+              <h2 className="text-xl font-extrabold text-primary tracking-tight text-center">
+                Cổng Hướng Dẫn Kê Khai & Tiền Kiểm Hồ Sơ
+              </h2>
+              <p className="text-xs text-zinc-500 mt-2 max-w-md text-center leading-relaxed">
+                Hệ thống hỗ trợ công dân chuẩn bị hồ sơ hành chính công trực tuyến theo đúng quy định pháp lý, tự động rà soát lỗi khai báo trước khi nộp chính thức.
               </p>
+
+              {/* Steps Flow Diagram */}
+              <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-border-slate pt-8 text-left">
+                <div className="p-4 bg-neutral-bg border border-border-slate rounded-lg">
+                  <div className="text-xs font-bold text-accent mb-1.5 flex items-center gap-1.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-accent text-white text-[10px] font-bold">1</span>
+                    Chọn thủ tục
+                  </div>
+                  <p className="text-[11px] text-zinc-600 leading-relaxed">
+                    Chọn nhanh dịch vụ gợi ý trong khung chat hoặc nhắn tin mô tả nhu cầu của bạn cho trợ lý AI.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-neutral-bg border border-border-slate rounded-lg">
+                  <div className="text-xs font-bold text-accent mb-1.5 flex items-center gap-1.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-accent text-white text-[10px] font-bold">2</span>
+                    Khai thông tin
+                  </div>
+                  <p className="text-[11px] text-zinc-600 leading-relaxed">
+                    Nhập dữ liệu vào tờ khai điện tử hiển thị tại đây theo các trường thông tin tối thiểu được yêu cầu.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-neutral-bg border border-border-slate rounded-lg">
+                  <div className="text-xs font-bold text-accent mb-1.5 flex items-center gap-1.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-accent text-white text-[10px] font-bold">3</span>
+                    Tiền kiểm lỗi
+                  </div>
+                  <p className="text-[11px] text-zinc-600 leading-relaxed">
+                    Nhấn rà soát để kiểm tra tính hợp lệ pháp lý, nhận cảnh báo sai sót trực tiếp từ Rule Engine.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </main>
