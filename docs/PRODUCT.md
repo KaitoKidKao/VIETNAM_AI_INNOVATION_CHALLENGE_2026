@@ -1,37 +1,40 @@
-# Product design context
+# Product
 
-> Đây là adapter thiết kế tối thiểu cho Impeccable. Nguồn sự thật về sản phẩm, MVP, scope và quyết định vẫn là [Project Context](ai/PROJECT_CONTEXT.md). Cập nhật tài liệu đó trước, rồi đồng bộ phần liên quan ở đây trước một task UI có shared tokens/components.
+## Register
 
-## Register and platform
+product
 
-- **Product register:** `TBD` — chốt giọng điệu (ví dụ: calm, editorial, playful, utilitarian) từ Product Brief, không suy đoán.
-- **Platform:** `TBD` — web/mobile/desktop, breakpoint và input method chỉ được điền sau khi chọn stack.
-- **Locale and content:** `TBD` — ưu tiên nội dung demo thật, không đưa dữ liệu nhạy cảm vào context hoặc screenshot audit.
+## Platform
 
-## Users and job to be done
+web
 
-- **Primary user:** `TBD`
-- **User goal / critical journey:** `TBD`
-- **Demo-critical state:** `TBD`
-- **Failure or empty state:** `TBD`
+## Users
+Công dân Việt Nam cần thực hiện các thủ tục hành chính công trực tuyến (như Đăng ký khai sinh, Đăng ký thường trú, Đăng ký thành lập hộ kinh doanh).
+- Đối tượng chính: Người dân thực hiện thủ tục lần đầu, người lớn tuổi ít am hiểu ngôn ngữ pháp lý hoặc không quen thao tác máy tính.
+- Mục tiêu: Có được một danh sách checklist hồ sơ cá nhân hóa rõ ràng, hiểu tại sao cần từng loại giấy tờ và được kiểm duyệt lỗi biểu mẫu tự động trước khi nộp.
+
+## Product Purpose
+VNGov tồn tại để giải quyết 3 rào cản chính khi làm thủ tục hành chính: sự mơ hồ về hồ sơ giấy tờ cần nộp, việc kê khai sai sót dẫn đến bị trả lại hồ sơ, và sự quá tải của các kênh hỗ trợ một cửa. Thành công là khi người dân tự chuẩn bị hồ sơ hợp lệ tại nhà mà không cần đến gặp trực tiếp cán bộ nhiều lần.
 
 ## Positioning
+VNGov là trợ lý hướng dẫn và tiền kiểm hồ sơ hành chính công một cách deterministic (chắc chắn), có trích dẫn nguồn pháp lý chuẩn và giải thích đơn giản cho người dân.
 
-- **Value proposition:** `TBD`
-- **What should feel distinct:** `TBD`
-- **What must remain simple or familiar:** `TBD`
-- **Non-goals for visual design:** `TBD`
+## Brand Personality
+Thực dụng, đáng tin cậy, rõ ràng, và tối giản (Utilitarian, Trust, Clarity, Simplicity). Giao diện mang lại cảm giác bình tĩnh, không rườm rà hay gây nhiễu thông tin.
 
-## Accessibility baseline
+## Anti-references
+- Các chatbot trả lời chung chung dựa vào phán đoán không có trích dẫn nguồn luật.
+- Các giao diện portal hành chính công truyền thống với bảng biểu chằng chịt, chữ nhỏ và phân cấp thông tin rối mắt.
+- Các hiệu ứng hoạt họa bay lượn màu mè gây mất tập trung (SaaS/Sleek tropes).
 
-- Meet keyboard, focus-visible, semantic structure and readable text requirements for the chosen platform.
-- Confirm color contrast, reduced-motion behavior and touch/target sizes after tokens and components are chosen.
-- Do not treat an Impeccable finding or waiver as an accessibility exception; record known limitations in the Task Record and demo fallback.
+## Design Principles
+- **Clarity over Cleverness:** Sự rõ ràng của thông tin hành chính quan trọng hơn các hiệu ứng thiết kế thông minh hay màu mè.
+- **Explain with Citations:** Mọi yêu cầu đưa ra đều phải đi kèm giải thích ngắn gọn "vì sao cần" và trích dẫn điều khoản luật rõ ràng.
+- **Fail Closed, Escape Early:** Khi thông tin ngoài phạm vi hoặc mâu thuẫn pháp lý, chỉ dẫn người dân đến kênh hỗ trợ chính thức thay vì cố đoán câu trả lời.
 
-## Update contract
-
-1. A product/demo peer updates `docs/ai/PROJECT_CONTEXT.md` when the problem, audience, MVP or non-goal changes.
-2. The owner of a scoped UI task updates the affected fields here and in [DESIGN.md](DESIGN.md), citing its Task Record/Decision where relevant.
-3. A shared visual change needs a Task Record, `risk:shared` review and a Decision Log entry as defined in the team protocol.
-
-Until the `TBD` fields are confirmed, this file provides boundaries only. It does not authorize a visual direction, platform assumption or new dependency.
+## Accessibility & Inclusion
+Hỗ trợ tối đa khả năng tiếp cận (tiêu chuẩn WCAG AA):
+- Độ tương phản màu chữ cao (Color contrast >= 4.5:1).
+- Hỗ trợ hoàn toàn điều hướng bằng bàn phím (focus-visible).
+- Cỡ chữ to, rõ ràng, hỗ trợ zoom màn hình của trình duyệt tốt.
+- Thiết kế thích ứng tốt trên các khung chứa iframe (portal container widths).

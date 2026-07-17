@@ -65,3 +65,6 @@ Thumbs.db
 
 # Local-only material for internal team presentation and notes.
 .temp_docs/
+.cursor/
+.agents/
+.github/
