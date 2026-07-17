@@ -68,3 +68,6 @@ Thumbs.db
 .cursor/
 .agents/
 .github/
+
+dataset_raw/
+data_raw
