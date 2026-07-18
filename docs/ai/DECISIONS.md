@@ -19,7 +19,7 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-003 | Accepted | Impeccable CLI advisory portable, không native skill/hook | `local-20260717-impeccable-cli` | 2026-07-17 |
 | D-004 | Accepted | Prompt Intake Gate trước task thực chất | `local-20260717-prompt-intake-gate` | 2026-07-17 |
 | D-005 | Accepted | Scaffold FastAPI backend và Next.js frontend | `local-20260717-scaffold-vaic` | 2026-07-17 |
-| D-006 | Proposed | Trust/RAG architecture, data governance, API maturity và deploy topology | `local-20260717-challenge-proposal` | 2026-07-17 |
+| D-006 | Accepted | Trust/RAG architecture, data governance, API maturity và deploy topology | `local-20260717-challenge-proposal` | 2026-07-17 |
 | D-007 | Accepted | Ba procedure pack MVP, pack thứ ba là thành lập hộ kinh doanh | `local-20260717-change-third-mvp` | 2026-07-17 |
 | D-008 | Accepted | Web-first delivery và portal integration pathway | `local-20260717-web-first-portal-scope` | 2026-07-17 |
 | D-009 | Accepted | AI Log prompt-only, provider-neutral và liên kết theo commit | `local-20260717-ai-log` | 2026-07-17 |
@@ -116,24 +116,24 @@ Nếu một khung không chạy được, dùng standalone UI hoặc mock API ch
 
 ## D-006 — Trust/RAG architecture, data governance, API maturity và deploy topology
 
-- **Trạng thái:** Proposed
+- **Trạng thái:** Accepted
 - **Ngày:** 2026-07-17
 - **Người đề xuất:** Task `local-20260717-challenge-proposal`
 - **Phạm vi:** API / data / deploy / demo
 - **Task Record:** `local-20260717-challenge-proposal`
-- **Peer xác nhận:** `TBD`; hai peer trong scope freeze.
+- **Peer xác nhận:** `hdtruong802` (user), 2026-07-18. Nếu task diễn ra trong scope freeze, vẫn cần peer thứ hai theo `TEAM_PROTOCOL.md`.
 
 ### Bối cảnh
 
 Ba capability của đề bài cần giao tiếp tự nhiên nhưng phải tạo kết quả kiểm chứng được. D-005 đã tạo code baseline, nhưng không giải quyết nguồn pháp lý, data release, grounding, PII boundary, external model, observability, widget/portal contract hay deploy.
 
-### Quyết định đề xuất
+### Quyết định đã chấp thuận
 
-Đề xuất kiến trúc web-first gồm standalone UI + iframe/widget, trust/orchestration backend, approved structured procedure packs, hybrid keyword/vector retrieval, deterministic rules và provider-neutral LLM adapter. Procedure Pack cần source/effective date/review/checksum; mọi response quy phạm cần `procedure_version`, `source_refs`, `last_verified_at` và một trust state: `verified_guidance`, `need_more_information`, `official_review_required`.
+Chấp thuận kiến trúc web-first gồm standalone UI + iframe/widget, trust/orchestration backend, approved structured procedure packs, hybrid keyword/vector retrieval, deterministic rules và provider-neutral LLM adapter. Procedure Pack cần source/effective date/review/checksum; mọi response quy phạm cần `procedure_version`, `source_refs`, `last_verified_at` và một trust state: `verified_guidance`, `need_more_information`, `official_review_required`.
 
 LLM chỉ hỏi làm rõ/diễn đạt/giải thích evidence đã có. Nó không quyết định hồ sơ hợp lệ, không tạo giấy tờ/rule ngoài pack approved và không nhận raw direct identifiers. PII Guard phải minimize/tokenize trước model call; token map session-only, không vào disk, log, vector index hay `CaseSnapshot`. Deterministic Rule Engine là nguồn duy nhất tạo field/cross-field findings.
 
-Curated acquisition, checksum, K1 approval, release/rollback và K2 re-review là gate trước runtime knowledge. D-006 đề xuất, nhưng chưa chọn/chưa provision, storage/vector database, model provider, hosting hoặc CD cụ thể.
+Curated acquisition, checksum, K1 approval, release/rollback và K2 re-review là gate trước runtime knowledge. D-006 chấp thuận kiến trúc mục tiêu và các gate; nó **không** tự chọn hoặc provision storage/vector database, model provider, hosting hay CD cụ thể.
 
 ### Hệ quả và kiểm chứng
 
