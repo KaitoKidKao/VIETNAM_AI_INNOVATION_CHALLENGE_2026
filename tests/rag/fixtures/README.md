@@ -95,3 +95,14 @@ build approved chunks:
 ```powershell
 python scripts/data/build_approved_rag_pack.py --approved-manifest artifacts/chunking/approved-sources-template.csv --output artifacts/chunking/approved-chunks.jsonl --report-output artifacts/chunking/approved-report.json
 ```
+
+For chatbot/demo use without official citation URLs, build a clearly marked local
+clean pack directly from K1-approved fixture rows:
+
+```powershell
+python scripts/data/build_demo_clean_rag_pack.py
+```
+
+This writes `artifacts/chatbot/clean-rag-chunks.jsonl`, a flat JSONL file that is
+ready for a chatbot loader. Its `source_refs` use `local-k1-fixture://...`
+instead of official URLs.
