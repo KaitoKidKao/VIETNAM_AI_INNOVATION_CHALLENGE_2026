@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import ALLOWED_ORIGINS
-from app.routers import health, procedures, intake, validation
+from app.routers import health, procedures, intake, validation, rag
 
 app = FastAPI(
     title="AI Procedure Copilot API",
@@ -23,3 +23,4 @@ app.include_router(health.router)
 app.include_router(procedures.router)
 app.include_router(intake.router)
 app.include_router(validation.router)
+app.include_router(rag.router)

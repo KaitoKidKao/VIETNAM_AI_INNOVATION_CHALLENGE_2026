@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Optional
 from app.models.checklist import ChecklistResponse, ChecklistItem, Step
 from app.models.common import Citation
+from app.services.rag_service import RAGService
 
 PROCEDURES_DB = {
     "dang-ky-khai-sinh": {
@@ -34,6 +35,22 @@ PROCEDURES_DB = {
         "trust_state": "verified_guidance"
     }
 }
+
+
+def _rag_citations(procedure_id: str, top_k: int = 3) -> List[Citation]:
+    evidence = RAGService.search_evidence(
+        query=f"{PROCEDURES_DB[procedure_id]['name']} thanh phan ho so",
+        procedure_id=procedure_id,
+        top_k=top_k,
+    )
+    return [
+        Citation(
+            title=f"Clean RAG evidence {hit.source_id}",
+            url=hit.source_refs[0] if hit.source_refs else None,
+            ref_code=hit.chunk_id,
+        )
+        for hit in evidence.hits
+    ]
 
 class ProcedureService:
     @staticmethod
@@ -100,7 +117,7 @@ class ProcedureService:
                     "required": ["ho_ten_tre", "ngay_sinh_tre", "ho_ten_me"]
                 },
                 effective_date="2024-01-01",
-                sources=citations
+                sources=[*citations, *_rag_citations(procedure_id)]
             )
 
         return ChecklistResponse(
@@ -134,5 +151,5 @@ class ProcedureService:
                 "required": ["ho_ten_nguoi_khai"]
             },
             effective_date="2024-01-01",
-            sources=citations
+            sources=[*citations, *_rag_citations(procedure_id)]
         )
