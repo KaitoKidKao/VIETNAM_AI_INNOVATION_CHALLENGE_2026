@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import hashlib
 import re
-from datetime import date
 from typing import List, Optional
 
 from app.models.common import Citation, ClarifyingQuestion, FindingSeverity
@@ -28,7 +27,7 @@ from app.services.rag.source_store import (
     PROCEDURE_DISPLAY_NAME,
     SourceRecord,
     get_source_freeze_date,
-    load_approved_records,
+    load_candidate_records,
 )
 
 _CONDITIONAL_MARKERS = ("trường hợp", "nếu có", "nếu ")
@@ -79,16 +78,15 @@ def _split_steps(raw_text: str) -> List[str]:
     return [raw_text.strip()] if raw_text.strip() else []
 
 
-def _parse_freeze_date() -> date:
-    try:
-        return date.fromisoformat(get_source_freeze_date())
-    except ValueError:
-        return date.today()
-
-
 def _record_checksum(record: SourceRecord) -> str:
     payload = "|".join(
-        [record.file_name, record.name, record.documents, record.steps, record.legal_basis_raw]
+        [
+            record.file_name,
+            record.name,
+            record.documents,
+            record.steps,
+            record.legal_basis_raw,
+        ]
     )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
@@ -98,10 +96,14 @@ def _primary_citation(record: SourceRecord) -> Citation:
         entry = record.legal_basis[0]
         ref_id = (entry.get("ref_code") or entry["title"])[:120]
         return Citation(
-            ref_id=ref_id, title=entry["title"][:240], url_or_ref="https://dichvucong.gov.vn"
+            ref_id=ref_id,
+            title=entry["title"][:240],
+            url_or_ref="https://dichvucong.gov.vn",
         )
     ref_id = (record.procedure_code or record.decision_no or record.file_name)[:120]
-    return Citation(ref_id=ref_id, title=record.name[:240], url_or_ref="https://dichvucong.gov.vn")
+    return Citation(
+        ref_id=ref_id, title=record.name[:240], url_or_ref="https://dichvucong.gov.vn"
+    )
 
 
 def _required_field_rules(
@@ -139,7 +141,7 @@ def build_procedure_pack_from_evidence(
     closed: Trust Policy se coi procedure nay la chua verified).
     """
 
-    records_by_procedure = load_approved_records()
+    records_by_procedure = load_candidate_records()
     records = records_by_procedure.get(procedure_id) or []
     if not records:
         return None
@@ -157,7 +159,9 @@ def build_procedure_pack_from_evidence(
             description=(line[:1000] or "Xem chi tiết trong hồ sơ nguồn."),
             source_ref_ids=[citation.ref_id],
         )
-        (optional_documents if _is_conditional(line) else required_documents).append(item)
+        (optional_documents if _is_conditional(line) else required_documents).append(
+            item
+        )
 
     if not required_documents:
         required_documents = [
@@ -200,9 +204,9 @@ def build_procedure_pack_from_evidence(
         name=PROCEDURE_DISPLAY_NAME.get(procedure_id, record.name),
         jurisdiction="Theo phân cấp quy định tại nguồn thủ tục (xem source_refs).",
         authority=record.authority_org or record.implementing_org or None,
-        version=f"rag-{get_source_freeze_date()}",
-        review_status=ReviewStatus.APPROVED,
-        last_verified_at=_parse_freeze_date(),
+        version=f"candidate-{get_source_freeze_date()}",
+        review_status=ReviewStatus.NEEDS_REVIEW,
+        last_verified_at=None,
         checksum=_record_checksum(record),
         source_refs=source_refs,
         intake_questions=intake_questions or [],
@@ -210,7 +214,9 @@ def build_procedure_pack_from_evidence(
         optional_documents=optional_documents,
         steps=steps,
         form_schema=form_schema,
-        validation_rules=_required_field_rules(procedure_id, form_schema, citation.ref_id),
+        validation_rules=_required_field_rules(
+            procedure_id, form_schema, citation.ref_id
+        ),
         aliases=aliases,
     )
 
@@ -219,7 +225,11 @@ _BIRTH_FORM_SCHEMA = {
     "type": "object",
     "properties": {
         "ho_ten_tre": {"type": "string", "title": "Họ và tên trẻ", "minLength": 2},
-        "ngay_sinh_tre": {"type": "string", "title": "Ngày sinh của trẻ", "format": "date"},
+        "ngay_sinh_tre": {
+            "type": "string",
+            "title": "Ngày sinh của trẻ",
+            "format": "date",
+        },
         "ho_ten_cha": {"type": "string", "title": "Họ và tên cha"},
         "ho_ten_me": {"type": "string", "title": "Họ và tên mẹ"},
     },
@@ -268,9 +278,9 @@ def build_birth_registration_pack() -> ProcedurePack:
         name="Đăng ký khai sinh",
         jurisdiction="Cấp xã/phường/thị trấn",
         authority="Ủy ban nhân dân cấp xã",
-        version=f"curated-{get_source_freeze_date()}",
-        review_status=ReviewStatus.APPROVED,
-        last_verified_at=_parse_freeze_date(),
+        version=f"candidate-curated-{get_source_freeze_date()}",
+        review_status=ReviewStatus.NEEDS_REVIEW,
+        last_verified_at=None,
         checksum="curated-birth-v1",
         source_refs=source_refs,
         intake_questions=[],

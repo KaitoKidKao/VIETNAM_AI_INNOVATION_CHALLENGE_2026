@@ -8,7 +8,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = REPOSITORY_ROOT / "backend"
 sys.path.insert(0, str(BACKEND_ROOT))
@@ -47,6 +46,24 @@ def _sample_chunk():
 
 
 class RuntimeRAGServiceTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._original_rag_get_settings = rag_service.get_settings
+        rag_service.get_settings = lambda: Settings(legacy_rag_enabled=True)
+
+    def tearDown(self) -> None:
+        rag_service.get_settings = self._original_rag_get_settings
+        rag_service.RAGService.clear_cache()
+
+    def test_legacy_rag_is_disabled_by_default(self) -> None:
+        rag_service.get_settings = lambda: Settings(legacy_rag_enabled=False)
+
+        result = rag_service.RAGService.search_evidence("giay chung sinh")
+
+        self.assertEqual("blocked", result.status)
+        self.assertEqual("legacy_rag_disabled", result.reason)
+        self.assertEqual([], result.hits)
+        self.assertEqual(0, result.loaded_chunks)
+
     def test_settings_use_repository_and_backend_env_files(self) -> None:
         self.assertEqual(REPOSITORY_ROOT / ".env", ENV_FILES[0])
         self.assertEqual(BACKEND_ROOT / ".env", ENV_FILES[1])

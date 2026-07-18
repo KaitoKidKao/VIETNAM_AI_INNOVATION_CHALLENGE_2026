@@ -18,8 +18,25 @@ def _sample_chunk():
 
 
 def _offline(monkeypatch) -> None:
-    monkeypatch.setattr("app.services.llm.gateway.get_settings", lambda: Settings(ai_api_key=""))
+    monkeypatch.setattr(
+        "app.services.llm.gateway.get_settings",
+        lambda: Settings(_env_file=None, ai_api_key="", openai_api_key=""),
+    )
     LLMGateway.reset()
+
+
+def test_gateway_config_supports_legacy_openai_env_names():
+    settings = Settings(
+        _env_file=None,
+        ai_api_key="",
+        openai_api_key="legacy-key",
+        openai_model="gpt-4o-mini-test",
+        openai_timeout_seconds=11,
+    )
+
+    assert settings.effective_ai_api_key == "legacy-key"
+    assert settings.effective_ai_model == "gpt-4o-mini-test"
+    assert settings.effective_ai_timeout_seconds == 11
 
 
 def test_gateway_is_offline_without_api_key(monkeypatch):
@@ -39,7 +56,10 @@ def test_fallback_clarification_asks_for_procedure_when_no_evidence(monkeypatch)
 
     assert isinstance(result, ClarificationOutput)
     assert result.needs_clarification is True
-    assert "phạm vi hỗ trợ" in result.reply_message or "mô tả" in result.reply_message.lower()
+    assert (
+        "phạm vi hỗ trợ" in result.reply_message
+        or "mô tả" in result.reply_message.lower()
+    )
 
 
 def test_fallback_clarification_asks_pending_question(monkeypatch):
@@ -78,4 +98,6 @@ def test_fallback_explanation_never_changes_severity_field(monkeypatch):
     )
 
     assert isinstance(result, ExplanationOutput)
-    assert result.friendly_message == "Họ và tên trẻ là bắt buộc và không được để trống."
+    assert (
+        result.friendly_message == "Họ và tên trẻ là bắt buộc và không được để trống."
+    )

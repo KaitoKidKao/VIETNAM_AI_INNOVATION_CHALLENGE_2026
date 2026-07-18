@@ -3,6 +3,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional
 
+from app.config import get_settings
 from app.models.rag import EvidenceHit, EvidenceSearchResponse
 from app.rag.chunking import EvidenceChunk
 from app.rag.retrieval import (
@@ -10,7 +11,6 @@ from app.rag.retrieval import (
     KeywordRetriever,
     RetrievalQuery,
 )
-
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_CLEAN_CHUNKS_PATH = (
@@ -37,7 +37,9 @@ def _tuple_fields(record: dict) -> dict:
     }
 
 
-def load_clean_chunks(path: Path = DEFAULT_CLEAN_CHUNKS_PATH) -> tuple[EvidenceChunk, ...]:
+def load_clean_chunks(
+    path: Path = DEFAULT_CLEAN_CHUNKS_PATH,
+) -> tuple[EvidenceChunk, ...]:
     if not path.is_file():
         return ()
     chunks: List[EvidenceChunk] = []
@@ -61,6 +63,15 @@ class RAGService:
         procedure_id: Optional[str] = None,
         top_k: int = 5,
     ) -> EvidenceSearchResponse:
+        if not get_settings().legacy_rag_enabled:
+            return EvidenceSearchResponse(
+                status="blocked",
+                reason="legacy_rag_disabled",
+                hits=[],
+                store_path=str(DEFAULT_CLEAN_CHUNKS_PATH),
+                loaded_chunks=0,
+            )
+
         chunks = _cached_chunks()
         if not query.strip():
             return EvidenceSearchResponse(

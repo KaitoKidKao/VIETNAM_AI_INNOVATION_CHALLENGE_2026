@@ -2,7 +2,7 @@
 
 - Dung `openai` SDK nhung tro `base_url` theo `AI_BASE_URL` de tuong thich
   bat ky provider OpenAI-compatible nao (khong lock-in mot vendor).
-- Neu thieu `AI_API_KEY` hoac goi model loi/timeout, gateway KHONG bao gio
+- Neu thieu `AI_API_KEY`/`OPENAI_API_KEY` hoac goi model loi/timeout, gateway KHONG bao gio
   bia noi dung quy pham: chuyen sang fallback templating deterministic
   dua tren evidence/finding da co, giu nguyen tinh fail-closed cua he thong.
 - Khong nhan raw PII: caller (Orchestrator) phai tokenize truoc khi goi
@@ -30,7 +30,9 @@ logger = logging.getLogger("vngov.llm_gateway")
 def _evidence_to_text(chunks) -> str:
     lines = []
     for chunk in chunks:
-        lines.append(f"[{chunk.section}] {chunk.text[:600]} (Nguồn: {chunk.source_title})")
+        lines.append(
+            f"[{chunk.section}] {chunk.text[:600]} (Nguồn: {chunk.source_title})"
+        )
     return "\n".join(lines)
 
 
@@ -52,19 +54,21 @@ class LLMGateway:
             return cls._client
         cls._client_initialized = True
         settings = get_settings()
-        if not settings.ai_api_key:
+        if not settings.effective_ai_api_key:
             cls._client = None
             return None
         try:
             from openai import OpenAI
 
             cls._client = OpenAI(
-                api_key=settings.ai_api_key,
-                base_url=settings.ai_base_url,
-                timeout=settings.ai_timeout_seconds,
+                api_key=settings.effective_ai_api_key,
+                base_url=settings.effective_ai_base_url,
+                timeout=settings.effective_ai_timeout_seconds,
             )
         except Exception:  # pragma: no cover - defensive, missing/broken SDK
-            logger.warning("LLM Gateway: khong the khoi tao client, dung fallback offline.")
+            logger.warning(
+                "LLM Gateway: khong the khoi tao client, dung fallback offline."
+            )
             cls._client = None
         return cls._client
 
@@ -80,14 +84,14 @@ class LLMGateway:
         settings = get_settings()
         try:
             response = client.chat.completions.create(
-                model=settings.ai_model,
+                model=settings.effective_ai_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_payload},
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.2,
-                timeout=settings.ai_timeout_seconds,
+                timeout=settings.effective_ai_timeout_seconds,
             )
             content = response.choices[0].message.content
             return json.loads(content)
@@ -114,9 +118,13 @@ class LLMGateway:
             try:
                 return ClarificationOutput.model_validate(raw)
             except Exception:
-                logger.warning("LLM Gateway: output khong dung schema, fallback deterministic.")
+                logger.warning(
+                    "LLM Gateway: output khong dung schema, fallback deterministic."
+                )
 
-        return cls._fallback_clarification(user_message, evidence_chunks, pending_questions)
+        return cls._fallback_clarification(
+            user_message, evidence_chunks, pending_questions
+        )
 
     @classmethod
     def explain_finding(
@@ -125,7 +133,9 @@ class LLMGateway:
         rule_message: str,
         tokenized_context: str = "",
     ) -> ExplanationOutput:
-        payload = build_explanation_user_payload(field_label, rule_message, tokenized_context)
+        payload = build_explanation_user_payload(
+            field_label, rule_message, tokenized_context
+        )
         raw = cls._call_json(EXPLANATION_SYSTEM_PROMPT, payload)
         if raw is not None:
             try:
@@ -167,7 +177,9 @@ class LLMGateway:
                 reply_message=question_text,
             )
 
-        procedure_name = evidence_chunks[0].procedure_name if evidence_chunks else "thủ tục của bạn"
+        procedure_name = (
+            evidence_chunks[0].procedure_name if evidence_chunks else "thủ tục của bạn"
+        )
         return ClarificationOutput(
             intent_summary=user_message[:200],
             needs_clarification=False,

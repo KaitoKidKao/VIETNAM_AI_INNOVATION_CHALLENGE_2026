@@ -17,14 +17,19 @@ class EvidenceChunk(BaseModel):
     procedure_id: str
     procedure_name: str
     section: str = Field(
-        ..., description="Ten section nguon: steps | documents | legal_basis | eligibility | ..."
+        ...,
+        description="Ten section nguon: steps | documents | legal_basis | eligibility | ...",
     )
     text: str
     source_title: str
-    source_ref: str = Field(..., description="Ma quyet dinh / van ban phap ly lam citation")
+    source_ref: str = Field(
+        ..., description="Ma quyet dinh / van ban phap ly lam citation"
+    )
     source_url: Optional[str] = None
-    last_verified_at: str
-    score: float = Field(0.0, description="Diem lexical relevance, chua chuan hoa xac suat")
+    last_verified_at: Optional[str] = None
+    score: float = Field(
+        0.0, description="Diem lexical relevance, chua chuan hoa xac suat"
+    )
 
 
 class RetrievalQuery(BaseModel):
