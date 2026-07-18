@@ -3,6 +3,10 @@
 :root {
   --background: #F8FAFC; /* Clean off-white background */
   --foreground: #333333; /* Dark slate-gray text */
+  /* System stacks avoid a build-time dependency on external font hosts. */
+  --font-geist-sans: "Segoe UI", Roboto, Arial, sans-serif;
+  --font-geist-mono: "Cascadia Mono", Consolas, monospace;
+  --font-lora: Georgia, "Times New Roman", serif;
 
   --color-primary-raw: #0D1B3D; /* Corporate Deep Navy */
   --color-neutral-bg-raw: #F1F5F9; /* Neutral slate tint */

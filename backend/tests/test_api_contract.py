@@ -99,10 +99,7 @@ def test_recommend_and_intake_support_accented_vietnamese(client: TestClient) ->
     assert recommend.json()["trust_state"] == "official_review_required"
     assert intake.status_code == 200
     assert intake.json()["detected_procedure_id"] == "dang-ky-thuong-tru"
-    assert (
-        intake.json()["proposed_session_context"]["procedure_id"]
-        == "dang-ky-thuong-tru"
-    )
+    assert intake.json()["proposed_session_context"]["procedure_id"] == "dang-ky-thuong-tru"
 
 
 def test_fixture_checklist_and_precheck_fail_closed(client: TestClient) -> None:
@@ -275,9 +272,7 @@ def test_production_disabled_is_degraded_and_never_exposes_fixture_data() -> Non
 
 
 def test_request_limit_and_rate_limit_have_safe_errors(client: TestClient) -> None:
-    too_large = client.post(
-        "/v1/procedures/recommend", json={"need_text": "a" * 70_000}
-    )
+    too_large = client.post("/v1/procedures/recommend", json={"need_text": "a" * 70_000})
     assert too_large.status_code == 422
     assert too_large.json()["error"]["code"] == "request_too_large"
 
@@ -288,12 +283,8 @@ def test_request_limit_and_rate_limit_have_safe_errors(client: TestClient) -> No
         rate_limit_requests=1,
     )
     limited_client = TestClient(create_app(settings=settings))
-    first = limited_client.post(
-        "/v1/procedures/recommend", json={"need_text": "khai sinh"}
-    )
-    second = limited_client.post(
-        "/v1/procedures/recommend", json={"need_text": "khai sinh"}
-    )
+    first = limited_client.post("/v1/procedures/recommend", json={"need_text": "khai sinh"})
+    second = limited_client.post("/v1/procedures/recommend", json={"need_text": "khai sinh"})
 
     assert first.status_code == 200
     assert second.status_code == 429

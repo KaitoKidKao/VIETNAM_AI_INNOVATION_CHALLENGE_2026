@@ -172,9 +172,7 @@ async def test_gateway_llm_provider_never_changes_finding_and_clears_session(
     monkeypatch,
 ):
     provider = GatewayLLMProvider()
-    monkeypatch.setattr(
-        "app.adapters.rag_llm.LLMGateway.is_online", classmethod(lambda cls: True)
-    )
+    monkeypatch.setattr("app.adapters.rag_llm.LLMGateway.is_online", classmethod(lambda cls: True))
 
     finding = Finding(
         field_id="ho_ten_tre",

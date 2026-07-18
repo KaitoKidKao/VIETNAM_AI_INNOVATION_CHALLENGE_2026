@@ -220,13 +220,9 @@ class GatewayLLMProvider:
         try:
             for finding in findings:
                 field_id = finding.field_id or "thông tin đã nộp"
-                token_value = (
-                    tokenized.get(finding.field_id) if finding.field_id else None
-                )
+                token_value = tokenized.get(finding.field_id) if finding.field_id else None
                 tokenized_context = (
-                    f"{finding.field_id}={token_value}"
-                    if token_value is not None
-                    else ""
+                    f"{finding.field_id}={token_value}" if token_value is not None else ""
                 )
                 result = LLMGateway.explain_finding(
                     field_label=field_id,

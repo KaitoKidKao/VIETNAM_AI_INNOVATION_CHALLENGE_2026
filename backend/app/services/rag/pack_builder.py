@@ -101,9 +101,7 @@ def _primary_citation(record: SourceRecord) -> Citation:
             url_or_ref="https://dichvucong.gov.vn",
         )
     ref_id = (record.procedure_code or record.decision_no or record.file_name)[:120]
-    return Citation(
-        ref_id=ref_id, title=record.name[:240], url_or_ref="https://dichvucong.gov.vn"
-    )
+    return Citation(ref_id=ref_id, title=record.name[:240], url_or_ref="https://dichvucong.gov.vn")
 
 
 def _required_field_rules(
@@ -159,9 +157,7 @@ def build_procedure_pack_from_evidence(
             description=(line[:1000] or "Xem chi tiết trong hồ sơ nguồn."),
             source_ref_ids=[citation.ref_id],
         )
-        (optional_documents if _is_conditional(line) else required_documents).append(
-            item
-        )
+        (optional_documents if _is_conditional(line) else required_documents).append(item)
 
     if not required_documents:
         required_documents = [
@@ -214,9 +210,7 @@ def build_procedure_pack_from_evidence(
         optional_documents=optional_documents,
         steps=steps,
         form_schema=form_schema,
-        validation_rules=_required_field_rules(
-            procedure_id, form_schema, citation.ref_id
-        ),
+        validation_rules=_required_field_rules(procedure_id, form_schema, citation.ref_id),
         aliases=aliases,
     )
 
