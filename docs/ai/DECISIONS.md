@@ -25,6 +25,7 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-009 | Accepted | AI Log prompt-only, provider-neutral và liên kết theo commit | `local-20260717-ai-log` | 2026-07-17 |
 | D-010 | Proposed | Fast merge gate và release artifact provider-neutral | `local-20260718-ci-cd-optimization` | 2026-07-18 |
 | D-012 | Accepted | Cloud Run backend demo foundation, production-disabled | `local-20260718-gcp-backend-deploy` | 2026-07-18 |
+| D-013 | Accepted | Prototype-driven stateless API read models for the six existing v1 routes | `local-20260718-prototype-api-contract` | 2026-07-18 |
 
 ---
 
@@ -266,6 +267,37 @@ Nếu candidate smoke hoặc 5xx lỗi, không chuyển traffic; deploy sau roll
 ### Live deployment evidence
 
 Ngày 2026-07-18, Cloud Build `8ef35d72-ee00-4b7b-8f21-d8791d7b4bba` build image backend source commit `b49ca1d31dc5c773a934d003353bc58a72355c08` thành digest `sha256:83d9170307385b8bf34247b2d5484c47aa8bf69e666a7661acba68a08ddf74b8`. Revision `vngov-api-00001-def` đang public tại `https://vngov-api-j53prjslqa-as.a.run.app`; public smoke pass với runtime production-disabled, six-route OpenAPI, fail-closed contract và rate-limit reset. Không có database, Secret Manager, Cloud Storage application, VPC/NAT, RAG, LLM hay procedure data runtime được tạo/bật trong D-012.
+
+---
+
+## D-013 — Prototype-driven stateless API read models
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** hdtruong802 / Codex
+- **Phạm vi:** API / demo / process
+- **Task Record:** `local-20260718-prototype-api-contract`
+- **Peer xác nhận:** user — explicit approval “thực hiện plan”
+
+### Bối cảnh
+
+Prototype web cần hiển thị luồng chat, tiến trình năm bước, procedure card, xác nhận thông tin và hành động kế tiếp. Sáu route `/v1` đã có là đủ boundary; chỉ thiếu read model và action stateless để FE tích hợp nhất quán.
+
+### Quyết định
+
+Mở rộng **additive** DTO của sáu route hiện hữu với journey năm bước, procedure card, confirmed facts, review/next action và turn type cho intake. `SessionContext` là structured state do browser giữ và gửi lại; backend không lưu transcript, form draft hay PII. Input DTO từ client dùng `extra=forbid`.
+
+Không thêm route, auth, upload/OCR, support ticket, portal integration, database, dependency hoặc provider. Deterministic Rule Engine vẫn là nguồn duy nhất tạo finding/verdict. Nội dung hướng dẫn/card/checklist chỉ được hiển thị đầy đủ khi Procedure Pack được verified; fixture hoặc runtime disabled giữ fail-closed.
+
+### Hệ quả và kiểm chứng
+
+- FE tích hợp trực tiếp bằng OpenAPI, không cần endpoint prototype riêng.
+- Context chỉ chứa procedure/version, câu trả lời clarification, document-review ID và review-gate acknowledgement; không chứa lịch sử chat hoặc form data.
+- Test contract phải chứng minh strict input, action flow, approved pack render và fixture/disabled không phát guidance.
+
+### Rollback / fallback
+
+Các trường response mới là optional/additive nên FE có thể bỏ qua. Nếu adapter/pack không sẵn sàng, response dùng `official_review_required` hoặc `need_more_information`, không fallback sang fact fixture.
 
 ---
 
