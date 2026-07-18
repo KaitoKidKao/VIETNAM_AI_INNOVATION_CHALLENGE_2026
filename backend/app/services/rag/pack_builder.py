@@ -33,24 +33,16 @@ from app.services.rag.source_store import (
 _CONDITIONAL_MARKERS = ("trường hợp", "nếu có", "nếu ")
 
 
-def _split_documents(raw_text: str) -> List[str]:
-    items: List[str] = []
-    buffer: List[str] = []
-    for raw_line in raw_text.splitlines():
-        stripped = raw_line.strip()
-        if not stripped:
-            continue
-        if stripped.startswith("- "):
-            if buffer:
-                items.append(" ".join(buffer))
-            buffer = [stripped[2:].strip()]
-        elif stripped.startswith("["):
-            continue
-        elif buffer:
-            buffer.append(stripped)
-    if buffer:
-        items.append(" ".join(buffer))
-    return items
+def _document_description(row) -> str:
+    text = row.name
+    if row.original_copies or row.duplicate_copies:
+        text = (
+            f"{text} (Bản chính: {row.original_copies or '0'}, "
+            f"Bản sao: {row.duplicate_copies or '0'})"
+        )
+    if row.group:
+        text = f"Áp dụng khi: {row.group}. {text}"
+    return text
 
 
 def _title_from_document_line(line: str) -> str:
@@ -149,15 +141,21 @@ def build_procedure_pack_from_evidence(
 
     required_documents: List[ChecklistItem] = []
     optional_documents: List[ChecklistItem] = []
-    for idx, line in enumerate(_split_documents(record.documents), start=1):
+    for idx, doc_row in enumerate(record.document_rows, start=1):
+        # Giay to thuoc 1 nhom dieu kien `[ Truong hop ... ]` trong nguon chi
+        # ap dung cho tinh huong cu the do -> "conditional", giu nguyen dieu
+        # kien trong `condition` de FE/LLM khong bia ra dieu kien khac.
+        is_conditional = bool(doc_row.group) or _is_conditional(doc_row.name)
+        description = _document_description(doc_row)
         item = ChecklistItem(
             id=f"{procedure_id}-doc-{idx}",
-            label=_title_from_document_line(line),
-            kind="conditional" if _is_conditional(line) else "required",
-            description=(line[:1000] or "Xem chi tiết trong hồ sơ nguồn."),
+            label=_title_from_document_line(doc_row.name),
+            kind="conditional" if is_conditional else "required",
+            description=(description[:1000] or "Xem chi tiết trong hồ sơ nguồn."),
             source_ref_ids=[citation.ref_id],
+            condition={"group": doc_row.group} if doc_row.group else None,
         )
-        (optional_documents if _is_conditional(line) else required_documents).append(item)
+        (optional_documents if is_conditional else required_documents).append(item)
 
     if not required_documents:
         required_documents = [

@@ -229,7 +229,13 @@ class GatewayLLMProvider:
                     rule_message=finding.message,
                     tokenized_context=tokenized_context,
                 )
-                explanations[finding.rule_id] = result.friendly_message
+                # Model duoc yeu cau giu nguyen token {{PII_...}} (khong tu bien
+                # thanh gia tri thuc) de tranh lo PII truc tiep sang provider LLM
+                # ben ngoai; phai detokenize truoc khi tra ve cho citizen, neu
+                # khong placeholder tho se bi lo ra ngoai (xem D-006/D-011).
+                explanations[finding.rule_id] = PIIGuard.detokenize_text(
+                    session_id, result.friendly_message
+                )
         finally:
             PIIGuard.clear_session(session_id)
 

@@ -117,6 +117,11 @@ class _ScoredChunk:
         )
 
 
+def _blend(lexical_score: float, semantic_score: float) -> float:
+    weight = get_settings().rag_semantic_weight
+    return (1 - weight) * lexical_score + weight * semantic_score
+
+
 @lru_cache(maxsize=1)
 def _build_keyword_index() -> Dict[str, List[_ScoredChunk]]:
     """Build keyword TF-IDF index (luon co, khong can API/model)."""
