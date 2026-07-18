@@ -34,7 +34,7 @@
   --color-hero-start-raw: #FFF7ED; /* Soft warm peach-cream start */
   --color-hero-end-raw: #F8FAFC; /* Flows into background */
 
-  /* Cổng DVCQG landing page theme (D-012): scoped to the public marketing
+  /* Cổng DVCQG landing page theme (D-015): scoped to the public marketing
      landing page only, kept separate from the VNGov Copilot Navy & Orange
      tokens above which still drive the app/copilot view. */
   --color-gov-red-raw: #A6231C; /* Deep vermillion, matches reference footer/CTA */
@@ -72,7 +72,7 @@
   --color-hero-start: var(--color-hero-start-raw);
   --color-hero-end: var(--color-hero-end-raw);
 
-  /* Cổng DVCQG landing page bindings (D-012) */
+  /* Cổng DVCQG landing page bindings (D-015) */
   --color-gov-red: var(--color-gov-red-raw);
   --color-gov-red-hover: var(--color-gov-red-hover-raw);
   --color-gov-gold: var(--color-gov-gold-raw);
@@ -118,7 +118,65 @@ body {
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
 }
 
-/* Custom Keyframe Animations & Hover Effects */
+/* Portal homepage (simulated Cổng DVCQG) scope — warm palette, kept
+   separate from the VNGov Copilot Navy & Orange tokens above. Only
+   applies inside .portal-home; never touches :root/@theme. */
+.portal-home {
+  --portal-page: #fffaf1;
+  --portal-surface: #fffdf9;
+  --portal-border: #eadfce;
+  --portal-text: #29231e;
+  --portal-muted: #82786f;
+  --portal-red: #aa281d;
+  --portal-red-dark: #7f2118;
+  --portal-orange: #e77b32;
+  --portal-gold: #e9a423;
+}
+
+.portal-container {
+  width: min(1420px, calc(100% - 64px));
+  margin-inline: auto;
+}
+
+/* VNGov Copilot workspace scope — warm civic palette (light-theme only for
+   this hackathon). Scoped under .copilot-workspace, kept separate from
+   :root/@theme tokens and from .portal-home so neither surface repoints the
+   other. */
+.copilot-workspace {
+  --vg-canvas: #FBF8F2;
+  --vg-surface: #FFFDF9;
+  --vg-surface-subtle: #F7F1E9;
+
+  --vg-border: #E8D9CB;
+  --vg-border-strong: #D5C1AF;
+
+  --vg-text: #25201C;
+  --vg-text-secondary: #655B53;
+  --vg-text-muted: #8A817A;
+
+  --vg-accent: #B52B23;
+  --vg-accent-hover: #962018;
+  --vg-accent-soft: #FCEDEA;
+
+  --vg-gold: #D8942F;
+  --vg-gold-soft: #FFF1DB;
+
+  --vg-success: #23865F;
+  --vg-success-soft: #EAF6F0;
+
+  --vg-warning: #B46E15;
+  --vg-warning-soft: #FFF4DF;
+
+  --vg-error: #C63D36;
+  --vg-error-soft: #FCECEA;
+}
+
+@media (max-width: 640px) {
+  .portal-container {
+    width: calc(100% - 32px);
+  }
+}
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -160,6 +218,25 @@ body {
 
 .animate-float-lotus {
   animation: floatLotus 6s ease-in-out infinite;
+}
+
+@keyframes drumSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-drum-spin {
+  animation: drumSpin 100s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drum-spin {
+    animation: none;
+  }
 }
 
 .hover-lift {

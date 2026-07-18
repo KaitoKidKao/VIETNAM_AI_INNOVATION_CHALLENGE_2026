@@ -26,12 +26,15 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-010 | Proposed | Fast merge gate và release artifact provider-neutral | `local-20260718-ci-cd-optimization` | 2026-07-18 |
 | D-011 | Proposed | RAG in-process (không pgvector), LLM Gateway OpenAI-compatible với offline fallback, PII Guard regex in-memory, tích hợp vào CopilotService/ports adapter | `local-20260718-rag-llm-guardrail` | 2026-07-18 |
 | D-012 | Accepted | Cloud Run backend demo foundation, production-disabled | `local-20260718-gcp-backend-deploy` | 2026-07-18 |
-| D-013 | Accepted | Prototype read models cho sáu route base và hai route RAG additive | `local-20260718-prototype-api-contract` | 2026-07-18 |
-| D-014 | Accepted | Structure-aware chunking contract cho ba procedure pack MVP | `local-20260718-chunking-phase-0`, `local-20260718-chunking-phase-1` | 2026-07-18 |
+| D-013 | Accepted | Production hardening local, fail closed trước K1 | `local-20260718-production-hardening-p0` | 2026-07-18 |
+| D-014 | Accepted | Synthetic approved family release cho demo local | `local-20260718-demo-family-release` | 2026-07-18 |
 | D-015 | Accepted | Ngoại lệ bảng màu đỏ-vàng cho landing page marketing, tách biệt VNGov Copilot Navy & Orange | `local-20260718-landing-page-red-gold` | 2026-07-18 |
-| D-016 | Accepted | Direct web-to-API integration, production fail-closed before K1 | `local-20260718-main-ci-api-integration` | 2026-07-18 |
-| D-017 | Cancelled, superseded by D-018 | Account-based demo login proposal; not implemented | `local-20260718-seeded-auth` | 2026-07-18 |
-| D-018 | Accepted | One-click client-side demo gate, no account or backend auth | `local-20260718-seeded-auth` | 2026-07-18 |
+| D-016 | Accepted | Tích hợp direct web-to-API, giữ production fail-closed trước K1 | `local-20260718-main-ci-api-integration` | 2026-07-18 |
+| D-017 | Accepted | Structure-aware chunking contract cho ba procedure pack MVP | `local-20260718-chunking-phase-0`, `local-20260718-chunking-phase-1` | 2026-07-18 |
+| D-018 | Accepted | Prototype read models cho sáu route base và hai route RAG additive | `local-20260718-prototype-api-contract` | 2026-07-18 |
+| D-019 | Accepted | Demo K1 simulation toggle + form schema cụ thể cho thường trú/hộ kinh doanh | `local-20260718-rag-llm-guardrail` | 2026-07-18 |
+| D-020 | Accepted | Demo gate client-side một chạm, không account/backend auth | `local-20260718-seeded-auth` | 2026-07-18 |
+| D-021 | Accepted | Waiver hẹp cho hai commit lịch sử thiếu AI Log | `local-20260719-pr32-merge-readiness` | 2026-07-19 |
 
 ---
 
@@ -276,6 +279,44 @@ Nếu retrieval lexical không đủ chất lượng cho demo, đặt lại `pro
 
 ---
 
+## D-012 — Cloud Run backend demo foundation, production-disabled
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** User-requested deployment task
+- **Phạm vi:** deploy / security / demo
+- **Task Record:** `local-20260718-gcp-backend-deploy`
+- **Peer xác nhận:** `hdtruong802` (user), 2026-07-18
+
+### Bối cảnh
+
+Backend FastAPI theo D-005 cần một pathway public demo độc lập với frontend. D-006 đã chấp thuận target architecture, nhưng data/RAG/LLM chưa được triển khai. Deploy khi fixture còn chạy hoặc không có rollback sẽ tạo rủi ro hướng dẫn sai và chi phí không kiểm soát.
+
+### Lựa chọn đã cân nhắc
+
+1. Chờ toàn bộ product stack/deploy topology: ít rủi ro, nhưng chưa có đường chuẩn bị backend demo độc lập.
+2. Deploy mọi capability ngay: nhanh hơn bề ngoài nhưng vi phạm fail-closed và mở rộng sang data/AI/storage.
+3. Chuẩn bị Cloud Run backend-only, production-disabled: container/API có public demo pathway nhưng không có procedure data, RAG, LLM, database hoặc secret.
+
+### Quyết định
+
+Chấp thuận lựa chọn 3. Dùng Cloud Run `asia-southeast1` với Artifact Registry Docker repository `vngov-backend` cùng region, service `vngov-api`, image tag full commit SHA immutable và deploy bằng digest. Runtime là 1 vCPU/512 MiB, request-based, `min-instances=0`, `max-instances=1`, timeout 20 giây, public demo access và user-managed service account `vngov-api-runtime` không có role/secret.
+
+Runtime phải có `APP_ENV=production`, `PROCEDURE_DATA_MODE=disabled`, `RAG_MODE=disabled`, `LLM_MODE=disabled`, CORS rỗng và rate limit 60 request/60 giây. `/health` phải `degraded`; không route nào được trả fixture, procedure guidance đã xác minh hoặc raw PII. Không tạo Secret Manager, Cloud SQL, Cloud Storage, Vertex AI, vector DB, VPC connector, NAT hay CD workflow trong scope này.
+
+### Hệ quả và kiểm chứng
+
+- D-012 không thay thế D-006. Cả hai đã được peer xác nhận; billing/credit, IAM, local/container smoke và candidate smoke vẫn là gate chặn provisioning hoặc traffic.
+- Build từ `backend/`, container chạy non-root và lắng nghe `PORT`; local lint/test/container smoke là gate.
+- Với service đã có stable revision, deploy candidate `--no-traffic`, smoke `/health`, `/openapi.json`, `/docs` và fail-closed contract trước khi chuyển 100% traffic. Cloud Run không hỗ trợ `--no-traffic` khi tạo service đầu tiên: bootstrap revision phải private/authenticated-only, smoke bằng identity token, rồi mới mở public access.
+- Ghi image digest, revision, URL, timestamp, smoke result và rollback revision vào handoff; tạo budget alert 10/25/50/80/100% của 1,000,000 VND sau billing review.
+
+### Rollback / fallback
+
+Nếu candidate smoke hoặc 5xx lỗi, không chuyển traffic; deploy sau rollback traffic về revision stable trước. Nếu bootstrap smoke lần đầu lỗi, không mở public access và dùng backend local làm fallback. Nếu billing/credit, IAM hoặc smoke không đạt, dừng ở artifact/runbook local.
+
+---
+
 ## D-013 — Production hardening local, fail closed trước K1
 
 - **Trạng thái:** Accepted
@@ -352,33 +393,18 @@ Không có migration, cloud state, secret hoặc API contract cần thu hồi.
 
 ---
 
-## D-017 — Đề xuất đăng nhập tài khoản cho demo (đã dừng)
-
-- **Trạng thái:** Superseded by D-018
-- **Ngày:** 2026-07-18
-- **Người đề xuất:** hdtruong802 / Codex
-- **Phạm vi:** API / dependency / deploy / demo — không triển khai
-- **Task Record:** `local-20260718-seeded-auth`
-- **Peer xác nhận:** user — dừng phương án này trước khi tạo resource hay account.
-
-### Kết quả
-
-Phương án bị dừng trước khi tạo resource, user, credential, migration hoặc public API. D-018 thay thế bằng demo gate client-side không có account/backend auth.
-
----
-
-## D-018 — Demo gate client-side một chạm
+## D-020 — Demo gate client-side một chạm
 
 - **Trạng thái:** Accepted
 - **Ngày:** 2026-07-18
 - **Người đề xuất:** hdtruong802 / Codex
 - **Phạm vi:** UI / demo / privacy
 - **Task Record:** `local-20260718-seeded-auth`
-- **Peer xác nhận:** user — xác nhận dừng toàn bộ tạo tài khoản và dùng nút “Vào demo ngay”.
+- **Peer xác nhận:** user — dừng phương án account-based trước khi tạo resource/account và xác nhận dùng nút “Vào demo ngay”.
 
 ### Quyết định
 
-- Modal login giữ form username/password để định hướng UX, nhưng form không gọi API và thông báo tài khoản chưa mở trong demo.
+- Phương án account-based bị dừng trước khi tạo resource, user, credential, migration hoặc public API. Modal login giữ form username/password để định hướng UX, nhưng form không gọi API và thông báo tài khoản chưa mở trong demo.
 - CTA “Vào demo ngay” tạo `sessionStorage` local cho profile cố định `demo-guest` / `Khách demo`, rồi mở Copilot.
 - Session chỉ tồn tại trong tab; logout xóa session và quay về landing. Không lưu PII, mật khẩu, token, transcript hay draft lên backend.
 - Backend Cloud Run không đổi: không thêm endpoint auth, database, secret, JWT, Cloud Run Job hay Cloud SQL. Data/RAG/LLM vẫn disabled và fail-closed.
@@ -389,7 +415,41 @@ Xóa demo session để quay về landing. Đây là gate UX cho demo, không ph
 
 ---
 
-## Mẫu quyết định mới
+## D-021 — Waiver hẹp cho hai commit lịch sử thiếu AI Log
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-19
+- **Người đề xuất:** Codex theo yêu cầu của user
+- **Phạm vi:** Process / CI evidence
+- **Task Record:** `local-20260719-pr32-merge-readiness`
+- **Peer xác nhận:** user cho phép bỏ qua AI Log của các commit lịch sử đang chặn PR #32.
+
+### Bối cảnh
+
+PR #32 bị chặn bởi history guard: hai non-merge commit đã có `policy.json` nhưng không có trailer/evidence AI Log. Không được dựng lại hoặc suy diễn prompt/session cũ, và rewrite `dev` sẽ làm thay đổi lịch sử integration dùng chung.
+
+### Quyết định
+
+- Giữ enforcement `policy-presence` cho mọi non-merge commit mới.
+- Chỉ miễn trailer/evidence cho đúng hai full SHA trong `historyEnforcement.exemptCommitOids`:
+  - `247311d9e510406642be3b37980131ac02ecbcc5` — structure-aware chunking migration.
+  - `e4ab0b994e2b9510def369ae7ded24a54e064669` — RAG conflict resolution.
+- Mỗi exemption bắt buộc full lowercase SHA và lý do không rỗng. Wildcard, prefix SHA, tắt enforcement toàn cục hoặc thêm prompt/evidence giả đều bị cấm.
+- Guard đọc waiver từ policy ở head của range để xử lý ngoại lệ lịch sử; commit tạo/đổi waiver vẫn phải có AI Log hợp lệ như mọi commit mới.
+
+### Hệ quả và kiểm chứng
+
+- Hai commit trên có thể được audit là historical gaps có chủ đích; các commit khác thiếu trailer vẫn fail.
+- Repository guard phát hiện conflict marker chưa resolve trong text source để không lặp lại lỗi Decision Log.
+- Waiver chỉ giải quyết policy CI, không thay thế review phần data/RAG lớn trong PR #32.
+
+### Rollback / fallback
+
+Xóa hai entry exemption và revert logic guard để khôi phục strict history enforcement. Không có runtime, cloud state, secret hay dữ liệu người dùng cần thu hồi.
+
+---
+
+## D-017 — Structure-aware chunking contract cho ba procedure pack MVP
 
 - **Trạng thái:** Accepted
 - **Ngày:** 2026-07-18
@@ -437,7 +497,7 @@ Không sửa raw corpus. Mọi parsed/chunk/index artifact có thể bỏ và bu
 
 ---
 
-## D-013 — Prototype read models và RAG routes additive
+## D-018 — Prototype read models và RAG routes additive
 
 - **Trạng thái:** Accepted
 - **Ngày:** 2026-07-18
@@ -465,6 +525,41 @@ Không thêm route, auth, upload/OCR, support ticket, portal integration, databa
 ### Rollback / fallback
 
 Các trường response mới là optional/additive nên FE có thể bỏ qua. Nếu adapter/pack không sẵn sàng, response dùng `official_review_required` hoặc `need_more_information`, không fallback sang fact fixture.
+
+---
+
+## D-019 — Demo K1 simulation toggle + form schema cụ thể cho thường trú/hộ kinh doanh
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** User theo Task Record hiện tại
+- **Phạm vi:** API | data | demo | trust policy
+- **Task Record:** `local-20260718-rag-llm-guardrail`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** User chọn phương án config flag mặc định `False`, version pack đổi rõ thành `demo-k1-simulated-...` khi bật, và yêu cầu ghi Decision Log trước khi implement (xác nhận qua AskQuestion trong phiên làm việc).
+
+### Bối cảnh
+
+D-013 đã khoá đúng hành vi fail-closed: nguồn RAG (`recommend`/`checklist`/`validate`) luôn ở `needs_review`/`official_review_required` trước khi có K1 review người thật, và rollback note của D-013 nêu rõ quay lại auto-approved "không phải fallback demo được khuyến nghị". Tuy nhiên, để demo hiển thị được full flow (form/steps/findings/explanations) trên **data RAG thật** thay vì chỉ trên fixture giả lập, cần một cách xem trước có kiểm soát mà không sửa default production — tương tự tinh thần D-014 (synthetic approved family release) nhưng áp cho stack `app/services/rag/*` (`recommend`/`checklist`/`validate`) thay vì stack legacy Q&A.
+
+Đồng thời, `form_schema` của "đăng ký thường trú" và "đăng ký hộ kinh doanh" đang dùng chung `_GENERIC_FORM_SCHEMA` (2 field: họ tên, số điện thoại) — quá sơ sài để rule engine tạo được finding có ý nghĩa, khác biệt với "đăng ký khai sinh" đã có `_BIRTH_FORM_SCHEMA` riêng.
+
+### Quyết định
+
+1. Thêm `Settings.rag_demo_k1_approved: bool = False` (env `RAG_DEMO_K1_APPROVED`). Mặc định `False` giữ đúng D-013 (100% không đổi hành vi hiện có, test cũ không cần sửa). Khi bật `True` (chỉ dành cho máy demo cục bộ, **không được bật trên production/public deploy**), `pack_builder._demo_k1_status()` trả `review_status=approved`, `last_verified_at=<rag_source_freeze_date>` và đổi `version` thành `demo-k1-simulated-...`/`demo-k1-simulated-curated-...` để không thể nhầm với K1 người thật đã duyệt.
+2. Viết `_RESIDENCE_FORM_SCHEMA` và `_BUSINESS_HOUSEHOLD_FORM_SCHEMA` riêng trong `app/adapters/rag_llm.py`, xấp xỉ theo tên mẫu chính thức được dẫn ngay trong nguồn RAG (mẫu CT01 cho thường trú, Giấy đề nghị đăng ký hộ kinh doanh cho hộ kinh doanh) — nội dung mẫu đầy đủ chưa có trong `data/Data_DVC`, nên field list là ước lượng hợp lý theo cấu trúc phổ biến, **chưa được procedure-research lane xác minh từng field/label với bản mẫu chính thức**. Pack vẫn ở `needs_review` khi flag demo tắt.
+3. Mở rộng `pack_builder._required_field_rules()` để tự sinh thêm `STRING_PATTERN` (khi field có `pattern`) và `DATE_FORMAT` (khi field có `format: date`) từ JSON Schema, không chỉ `REQUIRED` như trước — giữ nguyên rule_id/thứ tự của các rule `REQUIRED` đã có để không phá test cũ (`DANG-KY-KHAI-SINH-REQ-1`...).
+
+### Hệ quả và kiểm chứng
+
+- Mặc định (`rag_demo_k1_approved=False`): hành vi giống hệt trước D-019, `test_rag_adapter.py` (needs_review/None/official_review_required) không đổi.
+- Khi bật demo flag: `validate`/`checklist` cho 3 procedure RAG trả `verified_guidance`, hiện `form_schema`/`steps`, và rule engine tạo finding thật (required/pattern/date) mà LLM có thể giải thích — dùng để demo full flow trên data thật, không phải trên fixture.
+- `procedure_version` trong mọi response khi bật demo flag sẽ chứa chuỗi `demo-k1-simulated`, giúp FE/giám khảo phân biệt rõ với bản đã qua K1 thật.
+- Cần bổ sung test cho cả hai trạng thái flag và cho pattern/date rule mới trong `backend/tests/`.
+
+### Rollback / fallback
+
+Set `RAG_DEMO_K1_APPROVED=false` (hoặc không set — đây là default) để quay lại 100% hành vi D-013. Không có migration, cloud state hay secret cần thu hồi. Form schema thường trú/hộ kinh doanh có thể tiếp tục tinh chỉnh khi procedure-research lane có nội dung mẫu CT01/Giấy đề nghị chính thức, không cần đổi API/contract.
 
 ---
 
