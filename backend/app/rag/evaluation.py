@@ -7,7 +7,6 @@ from typing import Any, Iterable
 
 from .retrieval import KeywordRetriever, RetrievalQuery
 
-
 EVALUATOR_VERSION = "vaic-retrieval-evaluator-v1"
 
 

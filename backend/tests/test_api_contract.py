@@ -118,6 +118,8 @@ def test_fixture_checklist_and_precheck_fail_closed(client: TestClient) -> None:
     assert checklist.status_code == 200
     assert checklist.json()["fixture_mode"] is True
     assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["procedure_card"] is None
+    assert checklist.json()["form_schema"] == {}
     assert validation.status_code == 200
     assert validation.json()["verdict"] is None
     assert validation.json()["trust_state"] == "official_review_required"
@@ -259,12 +261,17 @@ def test_production_disabled_is_degraded_and_never_exposes_fixture_data() -> Non
     assert intake.json()["detected_procedure_id"] is None
     assert intake.json()["procedure"] is None
     assert intake.json()["clarifying_questions"] == []
+    assert intake.json()["journey"] is None
+    assert intake.json()["procedure_card"] is None
     assert checklist.json()["trust_state"] == "official_review_required"
     assert checklist.json()["fixture_mode"] is False
     assert checklist.json()["required_documents"] == []
     assert checklist.json()["steps"] == []
+    assert checklist.json()["journey"] is None
+    assert checklist.json()["procedure_card"] is None
     assert validation.json()["trust_state"] == "official_review_required"
     assert validation.json()["verdict"] is None
+    assert validation.json()["journey"] is None
 
 
 def test_request_limit_and_rate_limit_have_safe_errors(client: TestClient) -> None:

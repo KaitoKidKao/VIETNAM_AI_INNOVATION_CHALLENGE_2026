@@ -13,9 +13,7 @@ from app.rag.retrieval import (
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_CLEAN_CHUNKS_PATH = (
-    REPOSITORY_ROOT / "artifacts" / "chatbot" / "clean-rag-chunks.jsonl"
-)
+DEFAULT_CLEAN_CHUNKS_PATH = REPOSITORY_ROOT / "artifacts" / "chatbot" / "clean-rag-chunks.jsonl"
 RUNTIME_TO_RAG_PROCEDURE_IDS = {
     "dang-ky-khai-sinh": "birth_registration",
     "dang-ky-thuong-tru": "residence_registration",
@@ -82,9 +80,7 @@ class RAGService:
                 loaded_chunks=len(chunks),
             )
         rag_procedure_id = (
-            RUNTIME_TO_RAG_PROCEDURE_IDS.get(procedure_id, procedure_id)
-            if procedure_id
-            else None
+            RUNTIME_TO_RAG_PROCEDURE_IDS.get(procedure_id, procedure_id) if procedure_id else None
         )
         retriever = KeywordRetriever(ApprovedSourceRegistry(chunks))
         result = retriever.search(

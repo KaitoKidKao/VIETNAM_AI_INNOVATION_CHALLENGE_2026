@@ -15,7 +15,6 @@ from .normalization import decode_utf8, normalize_document
 from .parsing import PARSER_VERSION, ParsedSection
 from .sources import SourceDocument, SourceDocumentRegistry
 
-
 APPROVED_SOURCE_COLUMNS = (
     "source_id",
     "raw_document_id",

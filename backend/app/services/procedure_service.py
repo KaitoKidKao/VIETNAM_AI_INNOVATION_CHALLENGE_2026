@@ -41,6 +41,7 @@ PROCEDURES_DB = {
     },
 }
 
+from __future__ import annotations
 
 def _rag_citations(procedure_id: str, top_k: int = 3) -> list[Citation]:
     evidence = RAGService.search_evidence(
@@ -184,3 +185,12 @@ class ProcedureService:
             review_gate=ReviewGate.U2_CHECKLIST_REVIEW,
             fixture_mode=True,
         )
+        source_refs = [
+            Citation(
+                ref_id=hit.chunk_id,
+                title=f"RAG evidence {hit.source_id}",
+                url_or_ref=hit.source_refs[0] if hit.source_refs else None,
+            )
+            for hit in evidence.hits
+        ]
+        return ChecklistEvidence(source_refs=source_refs)
