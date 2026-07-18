@@ -20,6 +20,7 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-004 | Accepted | Prompt Intake Gate dùng chung trước task thực chất | `local-20260717-prompt-intake-gate` | 2026-07-17 |
 | D-005 | Accepted | Scaffold khung dự án FastAPI (Backend) và Next.js (Frontend) | `local-20260717-scaffold-vaic` | 2026-07-17 |
 | D-009 | Accepted | Structure-aware chunking contract cho ba procedure pack MVP | `local-20260718-chunking-phase-0`, `local-20260718-chunking-phase-1` | 2026-07-18 |
+| D-010 | Accepted | OpenAI grounded RAG adapter mac dinh `gpt-4o-mini` | `local-20260718-openai-grounded-rag` | 2026-07-18 |
 
 
 ---
@@ -239,6 +240,38 @@ Không sửa raw corpus. Mọi parsed/chunk/index artifact có thể bỏ và bu
 ---
 
 ## Mẫu quyết định mới
+
+## D-010 - OpenAI grounded RAG adapter mac dinh `gpt-4o-mini`
+
+- **Trang thai:** Accepted
+- **Ngay:** 2026-07-18
+- **Nguoi de xuat:** User theo Task Record hien tai
+- **Pham vi:** API | dependency | model/provider | demo
+- **Task Record:** `local-20260718-openai-grounded-rag`
+- **Publish tuy chon:** chua publish
+- **Peer xac nhan:** User xac nhan dung OpenAI API key va model `gpt-4o-mini`
+
+### Boi canh
+
+Runtime RAG da co clean approved chunks va endpoint search evidence, nhung chatbot chua goi LLM that. Demo can cau tra loi tieng Viet tu nhien dua tren evidence da duyet, dong thoi khong duoc suy doan khi retrieval khong co bang chung.
+
+### Lua chon da can nhac
+
+1. Giu keyword RAG khong LLM - on dinh nhung chatbot khong tu nhien.
+2. Goi LLM truc tiep tren user query - nhanh nhung vi pham fail-closed/citation policy.
+3. Goi OpenAI sau retrieval approved-only - can API key runtime nhung giu grounding va citation enforcement.
+
+### Quyet dinh
+
+Chon phuong an 3. Backend them OpenAI adapter doc `OPENAI_API_KEY` tu environment, `OPENAI_MODEL` mac dinh `gpt-4o-mini`, va endpoint additive `/v1/rag/answer`. Prompt chi cho phep tra loi dua tren evidence hits. Neu khong co evidence, thieu key hoac provider loi, API tra `official_review_required` thay vi sinh cau tra loi.
+
+### He qua va kiem chung
+
+Tests dung fake LLM client de khong goi network hay commit secret. Smoke that can chay local voi `.env` cua nguoi dung. `/v1/rag/search` giu nguyen lam fallback deterministic.
+
+### Rollback / fallback
+
+Go bo route/service/model answer se dua he thong ve keyword RAG search va checklist citations hien co. Khong co migration, database hay secret can thu hoi.
 
 ```md
 ## D-XXX — <title>

@@ -19,6 +19,8 @@ def root():
         "health": "/health",
         "rag_search_get": "/v1/rag/search?query=giay%20chung%20sinh&procedure_id=dang-ky-khai-sinh&top_k=3",
         "rag_search_post": "/v1/rag/search",
+        "rag_answer_get": "/v1/rag/answer?query=giay%20chung%20sinh&procedure_id=dang-ky-khai-sinh&top_k=3",
+        "rag_answer_post": "/v1/rag/answer",
     }
 
 # Configure CORS for frontend integration

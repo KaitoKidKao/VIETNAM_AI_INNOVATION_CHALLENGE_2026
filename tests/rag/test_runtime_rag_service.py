@@ -17,6 +17,11 @@ from app.rag.chunking import ChunkSourceMetadata, build_evidence_chunks
 from app.rag.normalization import normalize_document
 from app.rag.parsing import parse_sections
 from app.routers.rag import search_evidence_get
+from app.services.llm_service import (
+    GroundedRAGAnswerService,
+    LLMResult,
+    OpenAILLMClient,
+)
 from app.services import rag_service
 from app.services.procedure_service import ProcedureService
 
@@ -94,6 +99,62 @@ class RuntimeRAGServiceTests(unittest.TestCase):
         self.assertTrue(
             any(source.ref_code == chunk.chunk_id for source in response.sources)
         )
+
+    def test_grounded_answer_uses_llm_when_evidence_exists(self) -> None:
+        class FakeLLMClient:
+            def complete_grounded_answer(self, *, query, evidence):
+                return LLMResult(
+                    text=f"Can chuan bi giay chung sinh [{evidence[0].chunk_id}]",
+                    model="gpt-4o-mini",
+                )
+
+        chunk = _sample_chunk()
+        original = rag_service._cached_chunks
+        try:
+            rag_service._cached_chunks = lambda: (chunk,)
+            response = GroundedRAGAnswerService.answer(
+                query="toi can giay to gi",
+                procedure_id="dang-ky-khai-sinh",
+                top_k=1,
+                llm_client=FakeLLMClient(),
+            )
+        finally:
+            rag_service._cached_chunks = original
+
+        self.assertEqual("ok", response.status)
+        self.assertEqual("gpt-4o-mini", response.model)
+        self.assertIn(chunk.chunk_id, response.citations)
+        self.assertIn(chunk.chunk_id, response.answer)
+
+    def test_grounded_answer_fails_closed_without_evidence(self) -> None:
+        original = rag_service._cached_chunks
+        try:
+            rag_service._cached_chunks = lambda: ()
+            response = GroundedRAGAnswerService.answer(query="ngoai pham vi")
+        finally:
+            rag_service._cached_chunks = original
+
+        self.assertEqual("official_review_required", response.status)
+        self.assertEqual([], response.citations)
+        self.assertEqual([], response.evidence)
+
+    def test_grounded_answer_fails_closed_without_openai_key(self) -> None:
+        chunk = _sample_chunk()
+        original = rag_service._cached_chunks
+        try:
+            rag_service._cached_chunks = lambda: (chunk,)
+            response = GroundedRAGAnswerService.answer(
+                query="giay chung sinh",
+                procedure_id="dang-ky-khai-sinh",
+                top_k=1,
+                llm_client=OpenAILLMClient(api_key=""),
+            )
+        finally:
+            rag_service._cached_chunks = original
+
+        self.assertEqual("official_review_required", response.status)
+        self.assertEqual("missing_openai_api_key", response.reason)
+        self.assertIn(chunk.chunk_id, response.citations)
 
 
 if __name__ == "__main__":

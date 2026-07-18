@@ -26,3 +26,19 @@ class EvidenceSearchResponse(BaseModel):
     hits: List[EvidenceHit] = Field(default_factory=list)
     store_path: str
     loaded_chunks: int
+
+
+class GroundedAnswerRequest(EvidenceSearchRequest):
+    pass
+
+
+class GroundedAnswerResponse(BaseModel):
+    status: str
+    reason: Optional[str] = None
+    answer: Optional[str] = None
+    model: str
+    provider: str = "openai"
+    citations: List[str] = Field(default_factory=list)
+    evidence: List[EvidenceHit] = Field(default_factory=list)
+    store_path: str
+    loaded_chunks: int
