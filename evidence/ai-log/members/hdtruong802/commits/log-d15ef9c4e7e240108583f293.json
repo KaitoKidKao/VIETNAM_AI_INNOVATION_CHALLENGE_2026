@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "record_type": "commit_evidence",
+  "ai_log_id": "log-d15ef9c4e7e240108583f293",
+  "created_at": "2026-07-18T06:52:02.634171Z",
+  "member_id": "hdtruong802",
+  "branch": "fix/local-20260718-prototype-api-clean-pr",
+  "parent_commit": "fe27c8f55eb3850cfc892bae0e6345d4eeafd6ce",
+  "task_records": [
+    "local-20260718-prototype-api-clean-pr"
+  ],
+  "prompt_ids": [
+    "prompt-8c7b6abbabbce33c2fcdb689"
+  ],
+  "tools": [
+    "codex"
+  ],
+  "capture_status": "manual",
+  "warnings": [],
+  "operation": "commit",
+  "replaces_ai_log": null
+}
