@@ -4,6 +4,15 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+<<<<<<< HEAD
+APP_ENV = os.getenv("APP_ENV", "development")
+ALLOWED_ORIGINS = ["*"]  # In production, specify allowed origins
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
+OPENAI_TIMEOUT_SECONDS = float(os.getenv("OPENAI_TIMEOUT_SECONDS", "20"))
+=======
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -60,3 +69,4 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+>>>>>>> ddc7b1c1b86ad8bb29a4c1b0475fe5e483cb0750
