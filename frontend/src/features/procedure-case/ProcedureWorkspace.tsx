@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import quocHuy from "@/image/quoc-huy-viet-nam.png";
+import vngovSymbol from "@/image/VNGov_symbol.svg";
 import portalLogo from "@/image/logo-cong-dich-vu-cong-quoc-gia.png";
 import { useProcedureCase } from "./useProcedureCase";
 import {
@@ -95,7 +95,7 @@ export default function ProcedureWorkspace({
       {/* Header */}
       <header className="flex items-center justify-between gap-4 px-6 pr-[max(1.5rem,env(safe-area-inset-right))] pl-[max(1.5rem,env(safe-area-inset-left))] py-3 min-h-[72px] bg-[var(--vg-surface)] border-b border-[var(--vg-border)] shrink-0 relative z-20">
         <div className="flex items-center gap-3 min-w-0">
-          <Image src={quocHuy} alt="Quốc huy Việt Nam" className="w-9 h-9 shrink-0" priority />
+          <Image src={vngovSymbol} alt="Biểu tượng VNGov" className="w-9 h-9 shrink-0 object-contain" priority unoptimized />
           <Image src={portalLogo} alt="Cổng dịch vụ công Quốc gia" className="h-7 w-auto hidden sm:block" priority />
           <span className="text-[var(--vg-border-strong)] font-light text-lg hidden sm:inline">|</span>
           <div className="flex items-center gap-2 min-w-0">

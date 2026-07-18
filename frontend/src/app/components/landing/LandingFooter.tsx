@@ -1,6 +1,6 @@
 import Image from "next/image";
 import footerBg from "@/image/9c4df88a-96fa-45ff-9d88-467468014bdf.jpg";
-import quocHuy from "@/image/quoc-huy-viet-nam.png";
+import vngovSymbol from "@/image/VNGov_symbol.svg";
 import { PhoneIcon, MailIcon, GlobeIcon } from "./icons";
 
 interface LandingFooterProps {
@@ -16,7 +16,7 @@ export default function LandingFooter({ onComingSoon }: LandingFooterProps) {
       <div className="portal-container grid grid-cols-1 md:grid-cols-4 gap-8 relative z-10 text-sm pt-1">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <Image src={quocHuy} alt="Quốc huy Việt Nam" className="w-10 h-10 shrink-0" />
+            <Image src={vngovSymbol} alt="Biểu tượng VNGov" className="w-10 h-10 shrink-0 object-contain" unoptimized />
             <div>
               <h4 className="font-sans font-bold text-sm text-white">CỔNG DỊCH VỤ CÔNG QUỐC GIA</h4>
               <p className="text-sm uppercase font-bold text-gov-gold tracking-wider">Kết nối, cung cấp thông tin và dịch vụ công mọi lúc, mọi nơi</p>
