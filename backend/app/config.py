@@ -73,6 +73,15 @@ class Settings(BaseSettings):
     rag_embedding_batch_size: int = Field(default=64, ge=1, le=512)
     # Provider: "local" (sentence-transformers), "openai" (API), "auto" (local dau, roi openai).
     rag_embedding_provider: Literal["local", "openai", "auto"] = "auto"
+
+    # --- Demo-only K1 simulation (xem D-013 va D-019 trong DECISIONS.md) ---
+    # Mac dinh False: giu dung D-013 (fail-closed truoc K1 nguoi thuc) - pack
+    # RAG luon la "needs_review"/"official_review_required". Bat True CHI de
+    # demo cuc bo xem full flow (form/steps/validate) tren du lieu RAG thuc;
+    # KHONG duoc bat tren production/public deploy vi day khong phai K1 review
+    # thuc su. Khi bat, version pack se doi thanh "demo-k1-simulated-..." de
+    # phan biet ro voi ban approved thuc.
+    rag_demo_k1_approved: bool = False
     pii_token_ttl_seconds: int = Field(default=1_800, ge=1)
 
     model_config = SettingsConfigDict(env_file=ENV_FILES, extra="ignore")
