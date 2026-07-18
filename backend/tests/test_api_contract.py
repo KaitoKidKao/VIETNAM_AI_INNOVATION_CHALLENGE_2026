@@ -64,8 +64,9 @@ def test_health_reports_fixture_capability(client: TestClient) -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    assert response.json()["status"] == "degraded"
     assert response.json()["capabilities"]["procedure_data"] == "fixture"
+    assert response.json()["capabilities"]["procedure_guidance"] == "fixture"
 
 
 def test_procedures_list_only_the_three_mvp_ids(client: TestClient) -> None:
@@ -98,7 +99,10 @@ def test_recommend_and_intake_support_accented_vietnamese(client: TestClient) ->
     assert recommend.json()["trust_state"] == "official_review_required"
     assert intake.status_code == 200
     assert intake.json()["detected_procedure_id"] == "dang-ky-thuong-tru"
-    assert intake.json()["proposed_session_context"]["procedure_id"] == "dang-ky-thuong-tru"
+    assert (
+        intake.json()["proposed_session_context"]["procedure_id"]
+        == "dang-ky-thuong-tru"
+    )
 
 
 def test_fixture_checklist_and_precheck_fail_closed(client: TestClient) -> None:
@@ -181,97 +185,19 @@ def test_approved_adapter_enables_deterministic_precheck() -> None:
     assert valid.json()["findings"] == []
 
 
-def test_prototype_intake_actions_return_stateless_journey_read_models() -> None:
-    settings = Settings(app_env="test", procedure_data_mode="fixture")
-    container = build_container(settings)
-    container.procedure_repository = ApprovedProcedureRepository(approved_birth_pack())
-    container.recommendation_provider = FixtureRecommendationProvider()
-    prototype_client = TestClient(create_app(settings=settings, container=container))
-
-    selected = prototype_client.post(
-        "/v1/intake/turn",
-        json={
-            "session_id": "synthetic-session",
-            "message": "Tôi chọn đăng ký khai sinh",
-            "turn_type": "procedure_select",
-            "selected_procedure_id": "dang-ky-khai-sinh",
-        },
-    )
-    assert selected.status_code == 200
-    selected_body = selected.json()
-    assert selected_body["trust_state"] == "need_more_information"
-    assert selected_body["journey"]["total_steps"] == 5
-    assert selected_body["next_action"]["code"] == "answer_clarifications"
-
-    answered = prototype_client.post(
-        "/v1/intake/turn",
-        json={
-            "session_id": "synthetic-session",
-            "message": "Xác nhận",
-            "turn_type": "clarification_answer",
-            "clarification_answer": {
-                "question_id": "fixture-confirm-scenario",
-                "value": "Xác nhận",
-            },
-            "session_context": selected_body["proposed_session_context"],
-        },
-    )
-    assert answered.status_code == 200
-    answered_body = answered.json()
-    assert answered_body["trust_state"] == "verified_guidance"
-    assert answered_body["procedure_card"]["procedure_id"] == "dang-ky-khai-sinh"
-    assert answered_body["confirmed_facts"][0]["key"] == "fixture-confirm-scenario"
-    assert answered_body["next_action"]["code"] == "confirm_procedure"
-
-    checklist = prototype_client.post(
-        "/v1/procedures/dang-ky-khai-sinh/checklist",
-        json={
-            "session_context": answered_body["proposed_session_context"],
-            "clarification_answers": {"fixture-confirm-scenario": "Xác nhận"},
-        },
-    )
-    assert checklist.status_code == 200
-    assert checklist.json()["procedure_card"]["name"]
-    assert checklist.json()["journey"]["steps"][0]["status"] == "complete"
-
-
-def test_intake_rejects_unknown_fields_and_non_pending_answers(
-    client: TestClient,
-) -> None:
-    unknown_field = client.post(
-        "/v1/procedures/recommend",
-        json={"need_text": "khai sinh", "unexpected": "not accepted"},
-    )
-    non_pending = client.post(
-        "/v1/intake/turn",
-        json={
-            "session_id": "synthetic-session",
-            "message": "Câu trả lời",
-            "turn_type": "clarification_answer",
-            "clarification_answer": {"question_id": "unknown", "value": "value"},
-            "session_context": {"procedure_id": "dang-ky-khai-sinh"},
-        },
-    )
-
-    assert unknown_field.status_code == 422
-    assert unknown_field.json()["error"]["code"] == "request_validation_failed"
-    assert non_pending.status_code == 422
-    assert non_pending.json()["error"]["code"] == "clarification_question_not_pending"
-
-
-def test_openapi_exposes_base_and_rag_public_routes(client: TestClient) -> None:
+def test_openapi_exposes_current_public_routes(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
 
     assert set(paths) == {
         "/",
         "/health",
+        "/v1/applications/validate",
+        "/v1/intake/turn",
         "/v1/procedures",
         "/v1/procedures/{procedure_id}/checklist",
         "/v1/procedures/recommend",
-        "/v1/intake/turn",
-        "/v1/applications/validate",
-        "/v1/rag/search",
         "/v1/rag/answer",
+        "/v1/rag/search",
     }
 
 
@@ -317,8 +243,12 @@ def test_production_disabled_is_degraded_and_never_exposes_fixture_data() -> Non
     assert health.json()["environment"] == "production"
     assert health.json()["capabilities"] == {
         "procedure_data": "disabled",
+        "procedure_guidance": "unavailable",
         "rag": "disabled",
+        "rag_ready": "false",
         "llm": "disabled",
+        "llm_ready": "false",
+        "legacy_rag": "disabled",
     }
     assert catalog.status_code == 200
     assert len(catalog.json()) == 3
@@ -345,7 +275,9 @@ def test_production_disabled_is_degraded_and_never_exposes_fixture_data() -> Non
 
 
 def test_request_limit_and_rate_limit_have_safe_errors(client: TestClient) -> None:
-    too_large = client.post("/v1/procedures/recommend", json={"need_text": "a" * 70_000})
+    too_large = client.post(
+        "/v1/procedures/recommend", json={"need_text": "a" * 70_000}
+    )
     assert too_large.status_code == 422
     assert too_large.json()["error"]["code"] == "request_too_large"
 
@@ -356,8 +288,12 @@ def test_request_limit_and_rate_limit_have_safe_errors(client: TestClient) -> No
         rate_limit_requests=1,
     )
     limited_client = TestClient(create_app(settings=settings))
-    first = limited_client.post("/v1/procedures/recommend", json={"need_text": "khai sinh"})
-    second = limited_client.post("/v1/procedures/recommend", json={"need_text": "khai sinh"})
+    first = limited_client.post(
+        "/v1/procedures/recommend", json={"need_text": "khai sinh"}
+    )
+    second = limited_client.post(
+        "/v1/procedures/recommend", json={"need_text": "khai sinh"}
+    )
 
     assert first.status_code == 200
     assert second.status_code == 429

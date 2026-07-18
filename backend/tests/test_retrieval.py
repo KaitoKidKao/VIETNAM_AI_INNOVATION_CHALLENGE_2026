@@ -3,7 +3,11 @@ import pytest
 from app.config import get_settings
 from app.services.rag.retrieval import RetrievalService
 from app.services.rag.schemas import RetrievalQuery
-from app.services.rag.source_store import load_approved_records
+from app.services.rag.source_store import (
+    PROCEDURE_SOURCE_CODES,
+    load_candidate_records,
+    strip_diacritics,
+)
 
 
 def _has_source_data() -> bool:
@@ -16,9 +20,13 @@ requires_source_data = pytest.mark.skipif(
 )
 
 
+def test_strip_diacritics_folds_vietnamese_d_stroke():
+    assert strip_diacritics("Đăng ký thường trú") == "Dang ky thuong tru"
+
+
 @requires_source_data
-def test_load_approved_records_only_contains_allowlisted_packs():
-    records = load_approved_records()
+def test_load_candidate_records_only_contains_canonical_sources():
+    records = load_candidate_records()
 
     assert set(records.keys()) == {
         "dang-ky-khai-sinh",
@@ -28,6 +36,10 @@ def test_load_approved_records_only_contains_allowlisted_packs():
     assert len(records["dang-ky-khai-sinh"]) > 0
     assert len(records["dang-ky-thuong-tru"]) > 0
     assert len(records["dang-ky-ho-kinh-doanh"]) > 0
+    for procedure_id, procedure_records in records.items():
+        assert {record.procedure_code for record in procedure_records} == (
+            PROCEDURE_SOURCE_CODES[procedure_id]
+        )
 
 
 @requires_source_data

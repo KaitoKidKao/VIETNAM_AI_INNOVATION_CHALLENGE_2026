@@ -273,7 +273,83 @@ Nếu retrieval lexical không đủ chất lượng cho demo, đặt lại `pro
 
 ---
 
-## D-014 — Structure-aware chunking contract cho ba procedure pack MVP
+## D-013 — Production hardening local, fail closed trước K1
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** User và Codex theo review hệ thống chatbot
+- **Phạm vi:** API | data | model/provider | demo
+- **Task Record:** `local-20260718-production-hardening-p0`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** User chọn lộ trình Option 3, loại CI/CD/cloud và cho phép Codex review tài liệu kỹ thuật; xác nhận này không phải K1 human/legal approval.
+
+### Bối cảnh
+
+Hai RAG stack đang cùng tồn tại. Stack legacy đọc artifact từng được gắn approved tự động và có source lẫn ngoài phạm vi. Stack D-011 đọc nguồn thô rồi tự gắn `approved`/`last_verified_at` theo ngày freeze dù `PROJECT_CONTEXT.md` ghi rõ chưa qua K1. Lexical recommendation cũng luôn chọn một trong ba thủ tục cho greeting, câu chung và nhiều intent ngoài phạm vi, tạo precheck false-positive.
+
+### Quyết định
+
+- Nguồn trực tiếp chỉ là candidate: chỉ chấp nhận đúng cặp tên/mã canonical `1.001193`, `1.004222`, `1.001612`, gắn `needs_review`, không có `last_verified_at` và không tạo `verified_guidance`/verdict trước K1.
+- Thêm intent gate xác định rõ ba thủ tục; greeting, câu chung, nhiều intent hoặc intent ngoài phạm vi phải abstain.
+- Giữ nguyên URL/schema `/v1/rag/search` và `/v1/rag/answer`, nhưng khóa stack legacy mặc định bằng `LEGACY_RAG_ENABLED=false`. Chỉ bật lại có chủ đích sau khi artifact được review.
+- `Settings` đọc `.env` root và backend; gateway mới ưu tiên `AI_*` và fallback `OPENAI_*`. Health tách liveness khỏi readiness và báo `degraded` khi guidance chưa approved, RAG/LLM chưa sẵn sàng.
+- Task này chỉ harden local runtime; không triển khai CI/CD, cloud, deploy, gọi provider trả phí hoặc sửa dữ liệu thô.
+
+### Hệ quả và kiểm chứng
+
+Luồng hiện tại an toàn hơn nhưng chưa phải sản phẩm hoàn thiện: trước K1, UI phải hiển thị `official_review_required` thay vì checklist/precheck chắc chắn. Contract REST giữ nguyên; enum/capability chỉ được mở rộng. Test dùng source local và fake/offline provider, không gọi OpenAI thật.
+
+### Rollback / fallback
+
+Legacy route vẫn tồn tại và có thể bật có chủ đích bằng config sau review artifact. Revert D-013 sẽ khôi phục hành vi cũ nhưng đồng thời khôi phục rủi ro auto-approved và false-positive, nên không phải fallback demo được khuyến nghị.
+
+---
+
+## D-014 - Synthetic approved family release cho demo local
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** User theo Task Record hiện tại
+- **Phạm vi:** data | demo
+- **Task Record:** `local-20260718-demo-family-release`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** User yêu cầu giữ `review_status=approved`, dùng `https://dichvucong.gov.vn/`, version `2026`, reviewer `Cao`, ngày review `2026-07-18`.
+
+### Bối cảnh
+
+Registry 25 source/26 quan hệ đã có candidate package nhưng chưa có metadata K1
+thật. Demo local cần kiểm thử chunking/retrieval trên đủ family trước khi hoàn tất
+review nghiệp vụ. D-013 vẫn là policy production mặc định và không cho phép suy
+diễn K1 approval từ parser/checksum.
+
+### Quyết định
+
+Cho phép tạo một release **synthetic demo** bị Git ignore với
+`review_status=approved` theo chỉ định rõ của user. Manifest phải dùng version
+`vaic-family-demo-release-v1` và review notes nêu đây không phải K1/pháp lý;
+report/grouped pack phải ghi `approval_mode=synthetic_demo` và
+`not_for_production=true`. Tool chỉ nhận output dưới `artifacts/`, kiểm exact
+registry/code/title, strict UTF-8 và checksum trước khi build. Không commit raw
+data, reviewed manifest hay chunks; không đổi REST API hoặc production defaults.
+
+### Hệ quả và kiểm chứng
+
+- Artifact cho phép chạy approved-only retrieval trong demo local.
+- `approved` trong artifact này chỉ là cờ kỹ thuật của demo, không phải bằng chứng
+  `verified_guidance` production hoặc human K1.
+- `2.000986` giữ hai procedure IDs; source `dataset_raw` được đọc bằng path cấu
+  hình và không copy vào worktree.
+- Production release vẫn phải thay metadata synthetic bằng URL sâu, effective
+  date và review evidence thật theo D-006/D-013.
+
+### Rollback / fallback
+
+Xóa `artifacts/demo-family-release/` và `artifacts/chatbot/` được sinh bởi CLI.
+Không có migration, cloud state, secret hoặc API contract cần thu hồi.
+
+---
+
+## Mẫu quyết định mới
 
 - **Trạng thái:** Accepted
 - **Ngày:** 2026-07-18

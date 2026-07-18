@@ -114,36 +114,11 @@ body {
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
 }
 
-/* Portal homepage (simulated Cổng DVCQG) scope — warm palette, kept
-   separate from the VNGov Copilot Navy & Orange tokens above. Only
-   applies inside .portal-home; never touches :root/@theme. */
-.portal-home {
-  --portal-page: #fffaf1;
-  --portal-surface: #fffdf9;
-  --portal-border: #eadfce;
-  --portal-text: #29231e;
-  --portal-muted: #82786f;
-  --portal-red: #aa281d;
-  --portal-red-dark: #7f2118;
-  --portal-orange: #e77b32;
-  --portal-gold: #e9a423;
-}
-
-.portal-container {
-  width: min(1420px, calc(100% - 64px));
-  margin-inline: auto;
-}
-
-@media (max-width: 640px) {
-  .portal-container {
-    width: calc(100% - 32px);
-  }
-}
-
+/* Custom Keyframe Animations & Hover Effects */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -154,7 +129,7 @@ body {
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.97);
   }
   to {
     opacity: 1;
@@ -167,21 +142,12 @@ body {
     transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateY(-8px) scale(1.02);
-  }
-}
-
-@keyframes pulseGold {
-  0%, 100% {
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  }
-  50% {
-    box-shadow: 0 20px 25px -5px rgba(217, 119, 6, 0.25), 0 10px 10px -5px rgba(217, 119, 6, 0.15);
+    transform: translateY(-8px) scale(1.01);
   }
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-scale-in {
@@ -192,15 +158,10 @@ body {
   animation: floatLotus 6s ease-in-out infinite;
 }
 
-.animate-pulse-gold {
-  animation: pulseGold 4s infinite;
+.hover-lift {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
-/* Hover effects for premium feeling */
-.hover-lift {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
-}
 .hover-lift:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 25px -5px rgba(124, 30, 20, 0.08), 0 10px 10px -5px rgba(124, 30, 20, 0.03);
+  transform: translateY(-4px);
 }
