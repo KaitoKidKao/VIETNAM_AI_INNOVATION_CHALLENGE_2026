@@ -42,6 +42,14 @@ def approved_birth_pack() -> ProcedurePack:
         rule.model_copy(update={"source_ref_ids": [official_source.ref_id]})
         for rule in fixture.validation_rules
     ]
+    required_documents = [
+        document.model_copy(update={"source_ref_ids": [official_source.ref_id]})
+        for document in fixture.required_documents
+    ]
+    optional_documents = [
+        document.model_copy(update={"source_ref_ids": [official_source.ref_id]})
+        for document in fixture.optional_documents
+    ]
     return fixture.model_copy(
         update={
             "version": "approved-test-v1",
@@ -50,6 +58,8 @@ def approved_birth_pack() -> ProcedurePack:
             "source_refs": [official_source],
             "last_verified_at": date.today(),
             "validation_rules": rules,
+            "required_documents": required_documents,
+            "optional_documents": optional_documents,
         }
     )
 
@@ -64,8 +74,9 @@ def test_health_reports_fixture_capability(client: TestClient) -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    assert response.json()["status"] == "degraded"
     assert response.json()["capabilities"]["procedure_data"] == "fixture"
+    assert response.json()["capabilities"]["procedure_guidance"] == "fixture"
 
 
 def test_procedures_list_only_the_three_mvp_ids(client: TestClient) -> None:
@@ -87,7 +98,10 @@ def test_recommend_and_intake_support_accented_vietnamese(client: TestClient) ->
     )
     intake = client.post(
         "/v1/intake/turn",
-        json={"session_id": "synthetic-session", "message": "Tôi muốn đăng ký thường trú"},
+        json={
+            "session_id": "synthetic-session",
+            "message": "Tôi muốn đăng ký thường trú",
+        },
     )
 
     assert recommend.status_code == 200
@@ -111,12 +125,16 @@ def test_fixture_checklist_and_precheck_fail_closed(client: TestClient) -> None:
     assert checklist.status_code == 200
     assert checklist.json()["fixture_mode"] is True
     assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["procedure_card"] is None
+    assert checklist.json()["form_schema"] == {}
     assert validation.status_code == 200
     assert validation.json()["verdict"] is None
     assert validation.json()["trust_state"] == "official_review_required"
 
 
-def test_unknown_procedure_and_invalid_body_use_safe_error_envelope(client: TestClient) -> None:
+def test_unknown_procedure_and_invalid_body_use_safe_error_envelope(
+    client: TestClient,
+) -> None:
     unknown = client.post(
         "/v1/applications/validate",
         json={"procedure_id": "unknown", "form_data": {}},
@@ -174,22 +192,129 @@ def test_approved_adapter_enables_deterministic_precheck() -> None:
     assert valid.json()["findings"] == []
 
 
-def test_openapi_exposes_exactly_six_public_routes(client: TestClient) -> None:
+def test_candidate_source_exposes_cited_checklist_but_keeps_precheck_closed() -> None:
+    settings = Settings(app_env="test", procedure_data_mode="rag", rag_mode="disabled")
+    container = build_container(settings)
+    candidate_pack = approved_birth_pack().model_copy(
+        update={
+            "version": "candidate-test-v1",
+            "review_status": ReviewStatus.NEEDS_REVIEW,
+            "last_verified_at": None,
+        }
+    )
+    container.procedure_repository = ApprovedProcedureRepository(candidate_pack)
+    candidate_client = TestClient(create_app(settings=settings, container=container))
+
+    checklist = candidate_client.post(
+        "/v1/procedures/dang-ky-khai-sinh/checklist",
+        json={"clarification_answers": {}},
+    )
+    validation = candidate_client.post(
+        "/v1/applications/validate",
+        json={"procedure_id": "dang-ky-khai-sinh", "form_data": {}},
+    )
+
+    assert checklist.status_code == 200
+    assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["fixture_mode"] is False
+    assert checklist.json()["source_refs"]
+    assert checklist.json()["required_documents"]
+    assert all(item["source_ref_ids"] for item in checklist.json()["required_documents"])
+    assert checklist.json()["steps"] == []
+    assert checklist.json()["form_schema"] == {}
+    assert checklist.json()["procedure_card"] is None
+    assert validation.status_code == 200
+    assert validation.json()["trust_state"] == "official_review_required"
+    assert validation.json()["verdict"] is None
+
+
+def test_openapi_exposes_current_public_routes(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
 
     assert set(paths) == {
+        "/",
         "/health",
+        "/v1/applications/validate",
+        "/v1/intake/turn",
         "/v1/procedures",
         "/v1/procedures/{procedure_id}/checklist",
         "/v1/procedures/recommend",
-        "/v1/intake/turn",
-        "/v1/applications/validate",
+        "/v1/rag/answer",
+        "/v1/rag/search",
     }
 
 
 def test_production_rejects_dev_fixture() -> None:
     with pytest.raises(RuntimeError, match="fixture"):
         create_app(Settings(app_env="production", procedure_data_mode="fixture"))
+
+
+def test_production_disabled_is_degraded_and_never_exposes_fixture_data() -> None:
+    settings = Settings(
+        app_env="production",
+        procedure_data_mode="disabled",
+        rag_mode="disabled",
+        llm_mode="disabled",
+        cors_allowed_origins="",
+        rate_limit_enabled=True,
+    )
+    production_client = TestClient(create_app(settings=settings))
+
+    health = production_client.get("/health")
+    catalog = production_client.get("/v1/procedures")
+    recommendation = production_client.post(
+        "/v1/procedures/recommend", json={"need_text": "Tôi muốn đăng ký khai sinh"}
+    )
+    intake = production_client.post(
+        "/v1/intake/turn",
+        json={
+            "session_id": "production-disabled-test",
+            "message": "Tôi muốn đăng ký khai sinh",
+        },
+    )
+    checklist = production_client.post(
+        "/v1/procedures/dang-ky-khai-sinh/checklist",
+        json={"clarification_answers": {}},
+    )
+    validation = production_client.post(
+        "/v1/applications/validate",
+        json={"procedure_id": "dang-ky-khai-sinh", "form_data": {}},
+    )
+
+    assert health.status_code == 200
+    assert health.json()["status"] == "degraded"
+    assert health.json()["environment"] == "production"
+    assert health.json()["capabilities"] == {
+        "procedure_data": "disabled",
+        "procedure_guidance": "unavailable",
+        "rag": "disabled",
+        "rag_ready": "false",
+        "llm": "disabled",
+        "llm_ready": "false",
+        "legacy_rag": "disabled",
+    }
+    assert catalog.status_code == 200
+    assert len(catalog.json()) == 3
+    assert all(item["review_status"] == "unavailable" for item in catalog.json())
+    assert all(item["fixture_mode"] is False for item in catalog.json())
+    assert recommendation.json()["candidates"] == []
+    assert recommendation.json()["trust_state"] == "need_more_information"
+    assert intake.json()["trust_state"] == "need_more_information"
+    assert intake.json()["fixture_mode"] is False
+    assert intake.json()["detected_procedure_id"] is None
+    assert intake.json()["procedure"] is None
+    assert intake.json()["clarifying_questions"] == []
+    assert intake.json()["journey"] is None
+    assert intake.json()["procedure_card"] is None
+    assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["fixture_mode"] is False
+    assert checklist.json()["required_documents"] == []
+    assert checklist.json()["steps"] == []
+    assert checklist.json()["journey"] is None
+    assert checklist.json()["procedure_card"] is None
+    assert validation.json()["trust_state"] == "official_review_required"
+    assert validation.json()["verdict"] is None
+    assert validation.json()["journey"] is None
 
 
 def test_request_limit_and_rate_limit_have_safe_errors(client: TestClient) -> None:

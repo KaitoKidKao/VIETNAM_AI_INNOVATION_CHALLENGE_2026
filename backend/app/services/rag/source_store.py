@@ -45,25 +45,27 @@ _TOP_LEVEL_FIELDS = [
 
 _HEADER_RE = re.compile(r"^(" + "|".join(re.escape(f) for f in _TOP_LEVEL_FIELDS) + r"):\s*(.*)$")
 
-# Allowlist cua 3 procedure pack MVP: chi lay dung ten thu tuc da xac minh
+# Candidate allowlist cua 3 procedure pack MVP. Ten va ma thu tuc deu phai
+# khop chinh xac; allowlist khong co nghia la noi dung da qua K1.
 # khop pham vi de bai (trong nuoc, cap xa/huyen), khong suy dien theo
 # keyword long leo (rat nhieu ban ghi "thuong tru" trong dataset la ho chieu/
 # tam tru cua nguoi nuoc ngoai/phong vien, khong thuoc pham vi MVP).
 PROCEDURE_ALLOWLIST: Dict[str, List[str]] = {
     "dang-ky-khai-sinh": [
         "Thủ tục đăng ký khai sinh",
-        "Thủ tục đăng ký lại khai sinh",
-        "Thủ tục đăng ký khai sinh lưu động",
-        "Thủ tục đăng ký khai sinh kết hợp đăng ký nhận cha, mẹ, con",
     ],
     "dang-ky-thuong-tru": [
         "Đăng ký thường trú",
-        "Khai báo thông tin về cư trú đối với người chưa đủ điều kiện đăng ký thường trú, đăng ký tạm trú",
-        "Xác nhận về điều kiện diện tích bình quân nhà ở để đăng ký thường trú vào chỗ ở do thuê, mượn, ở nhờ; nhà ở, đất ở không có tranh chấp quyền sở hữu nhà ở, quyền sử dụng đất ở, không thuộc địa điểm không được đăng ký thường trú mới",
     ],
     "dang-ky-ho-kinh-doanh": [
         "Đăng ký thành lập hộ kinh doanh",
     ],
+}
+
+PROCEDURE_SOURCE_CODES: Dict[str, set[str]] = {
+    "dang-ky-khai-sinh": {"1.001193"},
+    "dang-ky-thuong-tru": {"1.004222"},
+    "dang-ky-ho-kinh-doanh": {"1.001612"},
 }
 
 PROCEDURE_DISPLAY_NAME: Dict[str, str] = {
@@ -75,7 +77,8 @@ PROCEDURE_DISPLAY_NAME: Dict[str, str] = {
 
 def strip_diacritics(text: str) -> str:
     normalized = unicodedata.normalize("NFKD", text)
-    return "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    folded = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    return folded.replace("đ", "d").replace("Đ", "D")
 
 
 def normalize_name(name: str) -> str:
@@ -246,8 +249,8 @@ def _parse_legal_basis(raw: str) -> List[Dict[str, str]]:
 
 def parse_source_file(path: Path) -> Optional[SourceRecord]:
     try:
-        raw_text = path.read_text(encoding="utf-8", errors="ignore")
-    except OSError:
+        raw_text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError):
         return None
 
     sections: Dict[str, List[str]] = {f: [] for f in _TOP_LEVEL_FIELDS}
@@ -297,11 +300,10 @@ def parse_source_file(path: Path) -> Optional[SourceRecord]:
 
 
 @lru_cache(maxsize=1)
-def load_approved_records(source_dir: Optional[str] = None) -> Dict[str, List[SourceRecord]]:
-    """Nap va loc source theo allowlist. Ket qua duoc cache trong process
-    (tuong duong 'Approved release' step trong RAG lifecycle) vi day la
-    tap tin tinh, khong doi trong luc server chay.
-    """
+def load_candidate_records(
+    source_dir: Optional[str] = None,
+) -> Dict[str, List[SourceRecord]]:
+    """Nap source candidate theo ten va ma canonical, chua gan trang thai K1."""
 
     base_dir = Path(source_dir) if source_dir else get_settings().rag_source_path
     name_to_procedure: Dict[str, str] = {}
@@ -320,6 +322,8 @@ def load_approved_records(source_dir: Optional[str] = None) -> Dict[str, List[So
             continue
         procedure_id = name_to_procedure.get(normalize_name(record.name))
         if procedure_id is None:
+            continue
+        if record.procedure_code not in PROCEDURE_SOURCE_CODES[procedure_id]:
             continue
         result[procedure_id].append(record)
 

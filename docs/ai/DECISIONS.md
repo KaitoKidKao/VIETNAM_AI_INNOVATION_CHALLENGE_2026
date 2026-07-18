@@ -19,12 +19,16 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-003 | Accepted | Impeccable CLI advisory portable, không native skill/hook | `local-20260717-impeccable-cli` | 2026-07-17 |
 | D-004 | Accepted | Prompt Intake Gate trước task thực chất | `local-20260717-prompt-intake-gate` | 2026-07-17 |
 | D-005 | Accepted | Scaffold FastAPI backend và Next.js frontend | `local-20260717-scaffold-vaic` | 2026-07-17 |
-| D-006 | Proposed | Trust/RAG architecture, data governance, API maturity và deploy topology | `local-20260717-challenge-proposal` | 2026-07-17 |
+| D-006 | Accepted | Trust/RAG architecture, data governance, API maturity và deploy topology | `local-20260717-challenge-proposal` | 2026-07-17 |
 | D-007 | Accepted | Ba procedure pack MVP, pack thứ ba là thành lập hộ kinh doanh | `local-20260717-change-third-mvp` | 2026-07-17 |
 | D-008 | Accepted | Web-first delivery và portal integration pathway | `local-20260717-web-first-portal-scope` | 2026-07-17 |
 | D-009 | Accepted | AI Log prompt-only, provider-neutral và liên kết theo commit | `local-20260717-ai-log` | 2026-07-17 |
 | D-010 | Proposed | Fast merge gate và release artifact provider-neutral | `local-20260718-ci-cd-optimization` | 2026-07-18 |
 | D-011 | Proposed | RAG in-process (không pgvector), LLM Gateway OpenAI-compatible với offline fallback, PII Guard regex in-memory, tích hợp vào CopilotService/ports adapter | `local-20260718-rag-llm-guardrail` | 2026-07-18 |
+| D-012 | Accepted | Cloud Run backend demo foundation, production-disabled | `local-20260718-gcp-backend-deploy` | 2026-07-18 |
+| D-013 | Accepted | Prototype read models cho sáu route base và hai route RAG additive | `local-20260718-prototype-api-contract` | 2026-07-18 |
+| D-014 | Accepted | Structure-aware chunking contract cho ba procedure pack MVP | `local-20260718-chunking-phase-0`, `local-20260718-chunking-phase-1` | 2026-07-18 |
+| D-015 | Accepted | Ngoại lệ bảng màu đỏ-vàng cho landing page marketing, tách biệt VNGov Copilot Navy & Orange | `local-20260718-landing-page-red-gold` | 2026-07-18 |
 
 ---
 
@@ -116,24 +120,24 @@ Nếu một khung không chạy được, dùng standalone UI hoặc mock API ch
 
 ## D-006 — Trust/RAG architecture, data governance, API maturity và deploy topology
 
-- **Trạng thái:** Proposed
+- **Trạng thái:** Accepted
 - **Ngày:** 2026-07-17
 - **Người đề xuất:** Task `local-20260717-challenge-proposal`
 - **Phạm vi:** API / data / deploy / demo
 - **Task Record:** `local-20260717-challenge-proposal`
-- **Peer xác nhận:** `TBD`; hai peer trong scope freeze.
+- **Peer xác nhận:** `hdtruong802` (user), 2026-07-18. Nếu task diễn ra trong scope freeze, vẫn cần peer thứ hai theo `TEAM_PROTOCOL.md`.
 
 ### Bối cảnh
 
 Ba capability của đề bài cần giao tiếp tự nhiên nhưng phải tạo kết quả kiểm chứng được. D-005 đã tạo code baseline, nhưng không giải quyết nguồn pháp lý, data release, grounding, PII boundary, external model, observability, widget/portal contract hay deploy.
 
-### Quyết định đề xuất
+### Quyết định đã chấp thuận
 
-Đề xuất kiến trúc web-first gồm standalone UI + iframe/widget, trust/orchestration backend, approved structured procedure packs, hybrid keyword/vector retrieval, deterministic rules và provider-neutral LLM adapter. Procedure Pack cần source/effective date/review/checksum; mọi response quy phạm cần `procedure_version`, `source_refs`, `last_verified_at` và một trust state: `verified_guidance`, `need_more_information`, `official_review_required`.
+Chấp thuận kiến trúc web-first gồm standalone UI + iframe/widget, trust/orchestration backend, approved structured procedure packs, hybrid keyword/vector retrieval, deterministic rules và provider-neutral LLM adapter. Procedure Pack cần source/effective date/review/checksum; mọi response quy phạm cần `procedure_version`, `source_refs`, `last_verified_at` và một trust state: `verified_guidance`, `need_more_information`, `official_review_required`.
 
 LLM chỉ hỏi làm rõ/diễn đạt/giải thích evidence đã có. Nó không quyết định hồ sơ hợp lệ, không tạo giấy tờ/rule ngoài pack approved và không nhận raw direct identifiers. PII Guard phải minimize/tokenize trước model call; token map session-only, không vào disk, log, vector index hay `CaseSnapshot`. Deterministic Rule Engine là nguồn duy nhất tạo field/cross-field findings.
 
-Curated acquisition, checksum, K1 approval, release/rollback và K2 re-review là gate trước runtime knowledge. D-006 đề xuất, nhưng chưa chọn/chưa provision, storage/vector database, model provider, hosting hoặc CD cụ thể.
+Curated acquisition, checksum, K1 approval, release/rollback và K2 re-review là gate trước runtime knowledge. D-006 chấp thuận kiến trúc mục tiêu và các gate; nó **không** tự chọn hoặc provision storage/vector database, model provider, hosting hay CD cụ thể.
 
 ### Hệ quả và kiểm chứng
 
@@ -269,38 +273,229 @@ Nếu retrieval lexical không đủ chất lượng cho demo, đặt lại `pro
 
 ---
 
-## D-012 — RAG semantic layer optional (embedding tiếng Việt + FAISS in-process)
+## D-013 — Production hardening local, fail closed trước K1
 
-- **Trạng thái:** Proposed
+- **Trạng thái:** Accepted
 - **Ngày:** 2026-07-18
-- **Người đề xuất:** Cursor theo yêu cầu người dùng hiện tại
-- **Phạm vi:** API | dependency | data
-- **Task Record:** `local-20260718-rag-llm-guardrail`
-- **Peer xác nhận:** cần một peer khác xác nhận (đổi baseline "không vector DB" của D-005/D-006)
+- **Người đề xuất:** User và Codex theo review hệ thống chatbot
+- **Phạm vi:** API | data | model/provider | demo
+- **Task Record:** `local-20260718-production-hardening-p0`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** User chọn lộ trình Option 3, loại CI/CD/cloud và cho phép Codex review tài liệu kỹ thuật; xác nhận này không phải K1 human/legal approval.
 
 ### Bối cảnh
 
-D-005/D-006 chốt retrieval pure-Python lexical, không dùng numpy/scikit-learn/vector DB để tránh dependency native nặng và giữ demo chạy offline không cần API key. Người dùng hiện tại yêu cầu bổ sung Vector DB + chunking "data-structure-aware" (tham khảo `rag/app/table.py`/`laws.py` của infiniflow/ragflow) vì dữ liệu thủ tục hành chính có nhiều bảng/thông tin dạng cấu trúc mà lexical thuần có thể bỏ sót khi câu hỏi không trùng từ khoá.
-
-### Lựa chọn đã cân nhắc
-
-1. Port thẳng kiến trúc ragflow (pandas/numpy/DeepDOC OCR/Elasticsearch hoặc Infinity engine) — không phù hợp vì nguồn dữ liệu là text đã có field tag sẵn (không phải PDF/Office thô cần OCR) và quá nặng cho hackathon.
-2. Vector DB ngoài (Neon/pgvector thật như D-006 đề xuất ban đầu) — yêu cầu Postgres service ngoài, rủi ro network/account cho demo.
-3. Semantic layer optional, in-process: embedding tiếng Việt (`bkai-foundation-models/vietnamese-bi-encoder`, fine-tune trên Zalo Legal Text Retrieval — gần domain văn bản hành chính/pháp lý) + FAISS `IndexFlatIP` (không cần service ngoài), bật qua flag `rag_semantic_mode=hybrid`, mặc định vẫn `lexical` (hành vi cũ không đổi); nếu thiếu dependency/model tự fail-closed về lexical.
+Hai RAG stack đang cùng tồn tại. Stack legacy đọc artifact từng được gắn approved tự động và có source lẫn ngoài phạm vi. Stack D-011 đọc nguồn thô rồi tự gắn `approved`/`last_verified_at` theo ngày freeze dù `PROJECT_CONTEXT.md` ghi rõ chưa qua K1. Lexical recommendation cũng luôn chọn một trong ba thủ tục cho greeting, câu chung và nhiều intent ngoài phạm vi, tạo precheck false-positive.
 
 ### Quyết định
 
-Chọn phương án 3. `app/services/rag/vector_index.py::SemanticIndex` lazy-load `sentence-transformers`/`faiss`; `RetrievalService` (`retrieval.py`) blend `lexical_score`/`semantic_score` theo `rag_semantic_weight` (mặc định 0.4) chỉ khi `SemanticIndex.is_available()` trả `True`, ngược lại giữ đúng lexical score như D-006/D-011. Chunking row-level (mỗi hình thức nộp/giấy tờ/cơ quan thực hiện = 1 `EvidenceChunk` riêng, xem `chunking.py`/`source_store.py`) đã áp dụng nguyên tắc "1 dòng bảng = 1 chunk" của `rag/app/table.py` từ trước khi có quyết định này — không đổi thêm ở đây.
+- Nguồn trực tiếp chỉ là candidate: chỉ chấp nhận đúng cặp tên/mã canonical `1.001193`, `1.004222`, `1.001612`, gắn `needs_review`, không có `last_verified_at` và không tạo `verified_guidance`/verdict trước K1.
+- Thêm intent gate xác định rõ ba thủ tục; greeting, câu chung, nhiều intent hoặc intent ngoài phạm vi phải abstain.
+- Giữ nguyên URL/schema `/v1/rag/search` và `/v1/rag/answer`, nhưng khóa stack legacy mặc định bằng `LEGACY_RAG_ENABLED=false`. Chỉ bật lại có chủ đích sau khi artifact được review.
+- `Settings` đọc `.env` root và backend; gateway mới ưu tiên `AI_*` và fallback `OPENAI_*`. Health tách liveness khỏi readiness và báo `degraded` khi guidance chưa approved, RAG/LLM chưa sẵn sàng.
+- Task này chỉ harden local runtime; không triển khai CI/CD, cloud, deploy, gọi provider trả phí hoặc sửa dữ liệu thô.
 
 ### Hệ quả và kiểm chứng
 
-- Mặc định `rag_semantic_mode=lexical`: hành vi/test hiện có không đổi (`pytest` 48 passed, không cần cài `sentence-transformers`/`faiss`).
-- Bật `hybrid` cần `pip install sentence-transformers faiss-cpu` (kéo theo `torch`, vài trăm MB–GB) và network để tải model lần đầu từ HuggingFace Hub; nếu không có, tự fail-closed về lexical, không crash.
-- Test mới `tests/test_vector_index.py` dùng monkeypatch để xác nhận logic blend đúng mà không cần download model thật (môi trường test không cài 2 package trên).
+Luồng hiện tại an toàn hơn nhưng chưa phải sản phẩm hoàn thiện: trước K1, UI phải hiển thị `official_review_required` thay vì checklist/precheck chắc chắn. Contract REST giữ nguyên; enum/capability chỉ được mở rộng. Test dùng source local và fake/offline provider, không gọi OpenAI thật.
 
 ### Rollback / fallback
 
-Đặt `RAG_SEMANTIC_MODE=lexical` (hoặc bỏ trống, đây là default) để tắt hoàn toàn semantic layer, không cần đổi code. Nếu model tiếng Việt không tải được lúc demo, hệ thống tự fail-closed về lexical-only.
+Legacy route vẫn tồn tại và có thể bật có chủ đích bằng config sau review artifact. Revert D-013 sẽ khôi phục hành vi cũ nhưng đồng thời khôi phục rủi ro auto-approved và false-positive, nên không phải fallback demo được khuyến nghị.
+
+---
+
+## D-014 - Synthetic approved family release cho demo local
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** User theo Task Record hiện tại
+- **Phạm vi:** data | demo
+- **Task Record:** `local-20260718-demo-family-release`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** User yêu cầu giữ `review_status=approved`, dùng `https://dichvucong.gov.vn/`, version `2026`, reviewer `Cao`, ngày review `2026-07-18`.
+
+### Bối cảnh
+
+Registry 25 source/26 quan hệ đã có candidate package nhưng chưa có metadata K1
+thật. Demo local cần kiểm thử chunking/retrieval trên đủ family trước khi hoàn tất
+review nghiệp vụ. D-013 vẫn là policy production mặc định và không cho phép suy
+diễn K1 approval từ parser/checksum.
+
+### Quyết định
+
+Cho phép tạo một release **synthetic demo** bị Git ignore với
+`review_status=approved` theo chỉ định rõ của user. Manifest phải dùng version
+`vaic-family-demo-release-v1` và review notes nêu đây không phải K1/pháp lý;
+report/grouped pack phải ghi `approval_mode=synthetic_demo` và
+`not_for_production=true`. Tool chỉ nhận output dưới `artifacts/`, kiểm exact
+registry/code/title, strict UTF-8 và checksum trước khi build. Không commit raw
+data, reviewed manifest hay chunks; không đổi REST API hoặc production defaults.
+
+### Hệ quả và kiểm chứng
+
+- Artifact cho phép chạy approved-only retrieval trong demo local.
+- `approved` trong artifact này chỉ là cờ kỹ thuật của demo, không phải bằng chứng
+  `verified_guidance` production hoặc human K1.
+- `2.000986` giữ hai procedure IDs; source `dataset_raw` được đọc bằng path cấu
+  hình và không copy vào worktree.
+- Production release vẫn phải thay metadata synthetic bằng URL sâu, effective
+  date và review evidence thật theo D-006/D-013.
+
+### Rollback / fallback
+
+Xóa `artifacts/demo-family-release/` và `artifacts/chatbot/` được sinh bởi CLI.
+Không có migration, cloud state, secret hoặc API contract cần thu hồi.
+
+---
+
+## Mẫu quyết định mới
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** Codex theo Task Record hiện tại
+- **Phạm vi:** data | shared logical schema | RAG
+- **Task Record:** `local-20260718-chunking-phase-0`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** Người dùng/repository peer xác nhận ngày 2026-07-18 để triển khai Phase 1 trực tiếp trên `cao`
+
+### Bối cảnh
+
+Corpus local có 5.652 file TXT nhưng raw document không tự động là nguồn đã duyệt. Mẫu phân tầng cho thấy tài liệu có cấu trúc field/bullet và nhiều dòng dài, nên fixed-size character chunking có nguy cơ cắt giữa trường, claim và căn cứ pháp lý. Proposal yêu cầu approved-only RAG, metadata hiệu lực, K1/K2 review và fail-closed; runtime hiện chưa có ingestion/chunking contract chung.
+
+Proposal đang tham chiếu D-006 đến D-008 nhưng các entry đó chưa có trong Decision Log hiện tại tại thời điểm đề xuất; các entry đó nay đã được publish (xem trên). Việc phục hồi nội dung lịch sử của các Decision này là task tài liệu riêng, không chặn fixture-only Phase 1.
+
+### Lựa chọn đã cân nhắc
+
+1. Whole-document retrieval — ít preprocessing nhưng context lớn, khó filter claim/citation và dễ trộn phiên bản.
+2. Fixed token windows với overlap — đơn giản nhưng cắt structure và nhân bản claim/citation không kiểm soát.
+3. Structure-aware parsing rồi áp token budget — cần parser/fixtures nhưng giữ provenance, hierarchy và legal basis để review/test.
+
+### Quyết định
+
+Chọn phương án 3 theo contract tại `docs/ai/CHUNKING_CONTRACT.md`:
+
+- Chỉ allowlist nguồn cho ba procedure pack MVP; không index toàn corpus.
+- Dùng lifecycle `staging -> parsed -> needs_review -> approved`, có `rejected` và `stale`; chỉ `approved` được retrieval.
+- Logical contract gồm `SourceDocument`, `ParsedSection`, `EvidenceChunk` và `ChunkBuildReport`.
+- Chunk target 250–350 tokens, hard maximum 450 tokens đã gồm prefix; không overlap theo phần trăm.
+- `TokenCounter` provider-neutral và tokenizer ID là một phần build identity.
+- Baseline là structured filter + keyword; vector/pgvector chỉ qua Decision riêng nếu golden set chứng minh cần thiết.
+- Không thay public API, dependency, database hoặc runtime schema trong Decision proposal này.
+
+### Hệ quả và kiểm chứng
+
+- Phase 1 phải tạo fixtures có section boundaries và parser deterministic trước khi build chunk.
+- Chỉ source/chunk có provenance, hiệu lực và review state hợp lệ mới được phát hành.
+- Chunk build phải reproducible; đổi source, parser, chunker hoặc tokenizer buộc version/rebuild.
+- Gate đánh giá gồm section-boundary F1 >= 95%, hard-cap pass 100%, citation coverage 100%, stale/future leakage 0 và Retrieval Recall@5 >= 95%.
+- Acceptance hiện chỉ cấp quyền triển khai fixtures, annotations và validator/test Phase 1; chưa cấp quyền thay runtime schema/dependency/index.
+
+### Rollback / fallback
+
+Không sửa raw corpus. Mọi parsed/chunk/index artifact có thể bỏ và build lại từ approved source snapshot. Nếu structure-aware retrieval không vượt baseline trên golden set, fallback về structured procedure lookup + keyword trên approved sections, không đưa whole corpus vào LLM.
+
+---
+
+## D-013 — Prototype read models và RAG routes additive
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** hdtruong802 / Codex
+- **Phạm vi:** API / demo / process
+- **Task Record:** `local-20260718-prototype-api-contract`
+- **Peer xác nhận:** user — explicit approval “thực hiện plan”
+
+### Bối cảnh
+
+Prototype web cần hiển thị luồng chat, tiến trình năm bước, procedure card, xác nhận thông tin và hành động kế tiếp. Sáu route `/v1` đã có là đủ boundary; chỉ thiếu read model và action stateless để FE tích hợp nhất quán.
+
+### Quyết định
+
+Mở rộng **additive** DTO của sáu route base với journey năm bước, procedure card, confirmed facts, review/next action và turn type cho intake. Đồng thời công khai hai route RAG additive: `/v1/rag/search` và `/v1/rag/answer`; chúng chỉ trả evidence approved hoặc diễn giải grounded có citation, và fail closed khi thiếu evidence/key hoặc provider lỗi. `SessionContext` là structured state do browser giữ và gửi lại; backend không lưu transcript, form draft hay PII. Input DTO từ client dùng `extra=forbid`.
+
+Không thêm route, auth, upload/OCR, support ticket, portal integration, database, dependency hoặc provider. Deterministic Rule Engine vẫn là nguồn duy nhất tạo finding/verdict. Nội dung hướng dẫn/card/checklist chỉ được hiển thị đầy đủ khi Procedure Pack được verified; fixture hoặc runtime disabled giữ fail-closed.
+
+### Hệ quả và kiểm chứng
+
+- FE tích hợp trực tiếp bằng OpenAPI, không cần endpoint prototype riêng.
+- Context chỉ chứa procedure/version, câu trả lời clarification, document-review ID và review-gate acknowledgement; không chứa lịch sử chat hoặc form data.
+- Test contract phải chứng minh strict input, action flow, approved pack render và fixture/disabled không phát guidance.
+
+### Rollback / fallback
+
+Các trường response mới là optional/additive nên FE có thể bỏ qua. Nếu adapter/pack không sẵn sàng, response dùng `official_review_required` hoặc `need_more_information`, không fallback sang fact fixture.
+
+---
+
+## D-015 — Ngoại lệ bảng màu đỏ-vàng cho landing page marketing
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** Claude theo yêu cầu người dùng
+- **Phạm vi:** UI/design
+- **Task Record:** `local-20260718-landing-page-red-gold`
+- **Peer xác nhận:** Người dùng xác nhận trực tiếp trong phiên làm việc ngày 2026-07-18
+
+### Bối cảnh
+
+Trang chủ marketing (`frontend/src/app/page.tsx`, khối `view === "landing"`) cần khớp bố cục và màu sắc với ảnh tham chiếu thật `Cổng dịch vụ công Quốc gia.png` (đỏ-vàng, trống đồng vàng kim, hoa sen hồng). `docs/DESIGN.md` hiện quy định hệ màu VNGov Navy & Orange, tối giản, không màu mè — dùng cho giao diện Trợ lý AI Copilot (`view === "copilot"`). Hai yêu cầu xung đột nhau nếu áp dụng cùng một bảng màu cho cả hai view.
+
+### Lựa chọn đã cân nhắc
+
+1. Giữ nguyên Navy & Orange cho cả landing page — không khớp ảnh mẫu người dùng cung cấp.
+2. Đổi toàn bộ `docs/DESIGN.md` sang đỏ-vàng — ảnh hưởng cả giao diện Copilot app, không cần thiết và rủi ro cao hơn.
+3. Thêm token màu riêng (`--color-gov-red`, `--color-gov-gold`, `--color-gov-cream`) chỉ dùng trong các component `frontend/src/app/components/landing/*`, giữ nguyên token Navy/Orange cho Copilot view.
+
+### Quyết định
+
+Chọn phương án 3. Landing page (Header, Hero, 6 dịch vụ, Dịch vụ nổi bật + Cập nhật, Lợi ích, Footer) dùng token `gov-red`/`gov-gold`/`gov-cream` mới trong `frontend/src/app/globals.css` và ảnh thật có sẵn trong `frontend/src/image/` (quốc huy, logo, nền trống đồng/hoa sen). Giao diện Copilot (`view === "copilot"`) không đổi, vẫn theo `docs/DESIGN.md` Navy & Orange.
+
+Bổ sung ngày 2026-07-18: thêm scoped token `--portal-page`/`--portal-surface`/`--portal-border`/`--portal-text`/`--portal-muted`/`--portal-red`/`--portal-red-dark`/`--portal-orange`/`--portal-gold` dưới class `.portal-home` (không sửa `:root`/`@theme`), và một `.portal-container` utility dùng chung cho mọi section của landing page, để khớp sát hơn ảnh tham chiếu gốc mà không đổi token Copilot.
+
+### Hệ quả và kiểm chứng
+
+- `docs/DESIGN.md` không cần cập nhật vì phạm vi ngoại lệ chỉ giới hạn ở landing page, không phải toàn bộ design system.
+- `npm run typecheck`, `npm run build` đã chạy sau các đợt chỉnh sửa; không có lỗi mới phát sinh từ thay đổi này (một lint warning tiền tồn tại trong `layout.tsx`, ngoài phạm vi).
+- Đã xác minh bằng `next dev` rằng landing page compile và render đúng nội dung, kể cả sau đợt refine footer/hero/benefits ngày 2026-07-18.
+
+### Rollback / fallback
+
+Xoá token `gov-*`/`portal-*` khỏi `globals.css` và revert các component trong `frontend/src/app/components/landing/` về bản Navy & Orange trước đó nếu cần đồng bộ lại với `docs/DESIGN.md`.
+
+---
+
+## D-016 — Tích hợp direct web-to-API, giữ production fail-closed trước K1
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** hdtruong802 / Codex
+- **Phạm vi:** API / deploy / demo / CI
+- **Task Record:** `local-20260718-main-ci-api-integration`
+- **Peer xác nhận:** user — xác nhận ba pack K1 là hướng mục tiêu, kết nối direct API + CORS và dừng nếu CI/CORS/trust không đạt.
+
+### Bối cảnh
+
+`main` có frontend web mới và Cloud Run backend công khai, nhưng CI đang lỗi ở repository policy, metadata dữ liệu, Black và lockfile frontend. Backend production hiện đúng chủ đích ở trạng thái `degraded`: procedure data, RAG và LLM đều disabled. Candidate/synthetic demo artifact theo D-014 không thay thế bằng chứng K1 hoặc căn cứ pháp lý đã duyệt.
+
+### Quyết định
+
+- Giữ nguyên sáu route `/v1` hiện có; chỉ đồng bộ trường DTO additive đã có trong D-013 giữa frontend và backend.
+- Web frontend gọi trực tiếp Cloud Run API qua `NEXT_PUBLIC_API_BASE_URL`; CORS runtime chỉ allowlist chính xác `https://vngov.vercel.app`, không dùng `*`.
+- Production tiếp tục `PROCEDURE_DATA_MODE=disabled`, `RAG_MODE=disabled`, `LLM_MODE=disabled` cho đến khi ba Procedure Pack có nguồn sâu, ngày hiệu lực, quyền sử dụng và K1 reviewer evidence thật.
+- Khi backend trả `official_review_required`, frontend không được trình bày checklist, form, citation hoặc pre-check fixture như guidance đã xác minh.
+- Sửa CI theo fail-fast scope hiện có; Vercel Git integration được để deploy production sau khi `main` có build xanh, không thêm CD/provider credential vào repo.
+
+### Hệ quả và kiểm chứng
+
+- UI có thể xác nhận kết nối health/CORS và luồng fallback an toàn ngay cả khi knowledge capability disabled.
+- Cần kiểm tra frontend build từ lockfile, backend formatting/tests, repository/data guards, health response production/degraded và preflight của đúng origin trước publish/deploy.
+- Vercel project owner cần đặt `NEXT_PUBLIC_API_BASE_URL=https://vngov-api-j53prjslqa-as.a.run.app` trong Production Environment nếu chưa có; đây là public URL, không phải secret.
+- Evidence ngày 2026-07-18: Cloud Run revision `vngov-api-00008-hez` nhận 100% traffic sau smoke `health` và preflight từ `https://vngov.vercel.app`; origin ngoài allowlist bị từ chối. Revision `vngov-api-00002-hav` được giữ làm rollback target.
+
+### Rollback / fallback
+
+Revert các trường frontend additive nếu consumer incompatibility; chuyển Cloud Run về revision trước nếu CORS/smoke lỗi. Giữ UI ở `official_review_required` và backend disabled nếu K1 chưa hoàn tất.
 
 ---
 

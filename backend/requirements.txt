@@ -6,18 +6,18 @@ pydantic-settings>=2.0.0
 python-dotenv>=1.0.0
 httpx>=0.25.0
 
-# LLM Gateway (provider-neutral, optional): chi duoc import khi AI_API_KEY
-# duoc cau hinh (xem app/services/llm/gateway.py, D-011). Thieu package nay
-# van chay duoc, gateway se fallback deterministic offline.
+# LLM Gateway: SDK phai co de RAG router import duoc. Khi thieu API key hoac
+# evidence, runtime van fail closed va khong goi provider.
 openai>=1.40.0
 
-# RAG semantic layer (optional, xem app/services/rag/vector_index.py, D-013).
-# Chi duoc import khi RAG_SEMANTIC_MODE=hybrid. Thieu 2 package nay van chay
-# duoc, retrieval se tu dong fail-closed ve lexical-only (hanh vi mac dinh
-# khong doi). Luu y: sentence-transformers keo theo torch (~vai tram MB-GB),
-# lan dau bat hybrid can network de download model tu HuggingFace Hub.
+# Semantic search: local Vietnamese embedding model (khong yeu cau API key).
+# sentence-transformers keo theo torch; model default ~400 MB, tu dong tai
+# khi khoi dong lan dau. De bo qua dense embedding, set RAG_RETRIEVAL_MODE=keyword.
+# Model co the override qua RAG_EMBEDDING_MODEL:
+#   - bkai-foundation-models/vietnamese-bi-encoder  (default, tot cho retrieval TV)
+#   - keepitreal/vietnamese-sbert                    (sentence similarity TV)
+#   - sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2  (nhe hon, 117MB)
 sentence-transformers>=3.0.0
-faiss-cpu>=1.8.0
 
 # Testing and development
 pytest>=7.4.0

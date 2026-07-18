@@ -8,7 +8,6 @@ from app.services.rag.schemas import EvidenceChunk
 from app.services.rag.source_store import (
     PROCEDURE_DISPLAY_NAME,
     SourceRecord,
-    get_source_freeze_date,
 )
 
 _SECTIONS = [
@@ -42,7 +41,6 @@ def _primary_citation(record: SourceRecord) -> tuple[str, str]:
 
 def build_chunks(procedure_id: str, records: List[SourceRecord]) -> List[EvidenceChunk]:
     chunks: List[EvidenceChunk] = []
-    freeze_date = get_source_freeze_date()
     procedure_name = PROCEDURE_DISPLAY_NAME.get(procedure_id, procedure_id)
 
     for record in records:
@@ -64,7 +62,7 @@ def build_chunks(procedure_id: str, records: List[SourceRecord]) -> List[Evidenc
                     source_title=f"{record.name} — {source_title}",
                     source_ref=source_ref,
                     source_url=source_url,
-                    last_verified_at=freeze_date,
+                    last_verified_at=None,
                 )
             )
 
@@ -156,7 +154,7 @@ def build_chunks(procedure_id: str, records: List[SourceRecord]) -> List[Evidenc
                     source_title=entry["title"],
                     source_ref=entry["ref_code"],
                     source_url=source_url,
-                    last_verified_at=freeze_date,
+                    last_verified_at=None,
                 )
             )
 
