@@ -10,8 +10,14 @@ describe("resolveDisplayedTrustState", () => {
   });
 
   it("keeps verified guidance for a non-fixture response", () => {
-    expect(resolveDisplayedTrustState("verified_guidance", false)).toBe(
+    expect(resolveDisplayedTrustState("verified_guidance", false, false)).toBe(
       "verified_guidance",
+    );
+  });
+
+  it("never displays demo MVP content as verified guidance", () => {
+    expect(resolveDisplayedTrustState("verified_guidance", false, true)).toBe(
+      "official_review_required",
     );
   });
 });

@@ -33,11 +33,15 @@ export default function ChecklistPanel({
     <div className="flex-1 flex flex-col overflow-y-auto p-5 space-y-6 bg-card-bg">
       <div className="border-b border-border-slate pb-4 shrink-0 space-y-2">
         <span className="text-[10px] font-bold text-accent tracking-wider uppercase">
-          {checklist.fixture_mode ? "Checklist & biểu mẫu demo" : "Cơ sở pháp lý & Tài liệu"}
+          {checklist.fixture_mode || checklist.demo_mode ? "Checklist & biểu mẫu demo" : "Cơ sở pháp lý & Tài liệu"}
         </span>
         <h2 className="text-base font-bold text-primary">{checklist.procedure_name}</h2>
-        <TrustBadge trustState={checklist.trust_state} fixtureMode={checklist.fixture_mode} />
-        {checklist.fixture_mode && (
+        <TrustBadge
+          trustState={checklist.trust_state}
+          fixtureMode={checklist.fixture_mode}
+          demoMode={checklist.demo_mode}
+        />
+        {(checklist.fixture_mode || checklist.demo_mode) && (
           <p
             role="status"
             className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold leading-relaxed text-amber-900"
@@ -91,6 +95,7 @@ export default function ChecklistPanel({
       <ChecklistReviewActions
         canConfirm={canConfirmU2}
         fixtureMode={checklist.fixture_mode}
+        demoMode={checklist.demo_mode}
         onConfirm={onConfirmU2}
       />
     </div>

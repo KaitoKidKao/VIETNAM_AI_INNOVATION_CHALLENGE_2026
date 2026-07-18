@@ -1,11 +1,10 @@
-"""Approved-demo procedure packs (Decision D-014 style synthetic approval).
+"""Demo-approved procedure packs for the local MVP flow.
 
 Cac pack JSON trong app/data/demo_packs duoc author offline tu nguon cong khai
-data/Data_DVC (ma 1.001193 / 1.004222 / 1.001612) va mang review_status=approved
-voi demo_pack=true: phê duyệt là kỹ thuật/mô phỏng cho demo, KHÔNG phải K1
-human/legal approval. TrustPolicy gan demo_mode vao moi response de UI luon
-hien thi watermark demo; pipeline trust/rule engine chay nguyen ban nhu voi
-pack duoc duyet that.
+data/Data_DVC (ma 1.001193 / 1.004222 / 1.001612) va mang
+review_status=demo_approved voi demo_pack=true. Day la du lieu ky thuat cho
+demo, KHONG phai K1/human legal approval. TrustPolicy gan demo_mode vao moi
+response de UI luon hien thi watermark demo.
 """
 
 from __future__ import annotations
@@ -16,7 +15,12 @@ from pathlib import Path
 
 from app.adapters.dev_fixture import normalize_text
 from app.models.common import SessionContext
-from app.models.procedure import ProcedureCandidate, ProcedurePack, ProcedureSummary
+from app.models.procedure import (
+    ProcedureCandidate,
+    ProcedurePack,
+    ProcedureSummary,
+    ReviewStatus,
+)
 
 DEMO_PACK_DIR = Path(__file__).resolve().parents[1] / "data" / "demo_packs"
 
@@ -31,6 +35,10 @@ def load_demo_packs() -> dict[str, ProcedurePack]:
             raise ValueError(
                 f"Demo pack {path.name} thiếu demo_pack=true; "
                 "chỉ pack watermark demo được nạp qua adapter này."
+            )
+        if pack.review_status != ReviewStatus.DEMO_APPROVED:
+            raise ValueError(
+                f"Demo pack {path.name} phải dùng review_status=demo_approved."
             )
         packs[pack.procedure_id] = pack
     if not packs:

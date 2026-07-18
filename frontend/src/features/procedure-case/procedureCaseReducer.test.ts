@@ -14,6 +14,7 @@ function baseTrust() {
     last_verified_at: "2026-07-17",
     review_gate: null,
     fixture_mode: false,
+    demo_mode: false,
   };
 }
 
@@ -174,6 +175,31 @@ describe("procedureCaseReducer — official_review_required override", () => {
     });
 
     expect(state.flow).toBe("official_review_required");
+  });
+
+  it("keeps a demo-approved checklist and precheck in the demo flow without verified trust", () => {
+    let state = procedureCaseReducer(createInitialState("s1"), {
+      type: "CHECKLIST_RESPONSE_RECEIVED",
+      response: checklistResponse({
+        trust_state: "official_review_required",
+        demo_mode: true,
+        last_verified_at: null,
+      }),
+    });
+    expect(state.flow).toBe("checklist_review");
+    expect(state.trustMetadata?.trust_state).toBe("official_review_required");
+
+    state = procedureCaseReducer(state, {
+      type: "VALIDATION_RESPONSE_RECEIVED",
+      response: validationResponse({
+        trust_state: "official_review_required",
+        demo_mode: true,
+        verdict: "pass_preliminary",
+        last_verified_at: null,
+      }),
+    });
+    expect(state.flow).toBe("pass_preliminary");
+    expect(state.trustMetadata?.trust_state).toBe("official_review_required");
   });
 
   it("overrides regardless of current flow for intake responses", () => {

@@ -39,9 +39,9 @@ export default function PrecheckPanel({
         </button>
       </div>
 
-      {trustMetadata?.fixture_mode && (
+      {(trustMetadata?.fixture_mode || trustMetadata?.demo_mode) && (
         <p className="text-xs font-medium leading-relaxed text-foreground/60">
-          Biểu mẫu demo chưa tạo kết luận tiền kiểm. Hồ sơ thật cần dữ liệu đã được cơ quan có thẩm quyền duyệt.
+          Kết quả này chỉ phục vụ diễn tập demo MVP, không phải xác nhận K1 hoặc kết luận của cơ quan có thẩm quyền.
         </p>
       )}
 

@@ -29,6 +29,7 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-013 | Accepted | Prototype read models cho sáu route base và hai route RAG additive | `local-20260718-prototype-api-contract` | 2026-07-18 |
 | D-014 | Accepted | Structure-aware chunking contract cho ba procedure pack MVP | `local-20260718-chunking-phase-0`, `local-20260718-chunking-phase-1` | 2026-07-18 |
 | D-015 | Accepted | Ngoại lệ bảng màu đỏ-vàng cho landing page marketing, tách biệt VNGov Copilot Navy & Orange | `local-20260718-landing-page-red-gold` | 2026-07-18 |
+| D-017 | Accepted | Demo-approved MVP không được giả mạo K1 | `local-20260719-demo-phases-0-5` | 2026-07-19 |
 
 ---
 
@@ -377,6 +378,40 @@ Không thêm endpoint hoặc đổi request schema. Frontend dùng tổ hợp `f
 ### Rollback / fallback
 
 Revert task commit để quay lại hành vi strip toàn bộ fixture content. Không có migration, data release hoặc secret cần thu hồi.
+
+---
+
+## D-017 — Demo-approved MVP không được giả mạo K1
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-19
+- **Người đề xuất:** User và Codex tiếp nhận handoff từ Claude
+- **Phạm vi:** API | data | model/provider | demo
+- **Task Record:** `local-20260719-demo-phases-0-5`
+- **Peer xác nhận:** User xác nhận chỉ ba pack MVP được dùng như dữ liệu demo đã kiểm thử, không gọi là K1
+
+### Bối cảnh
+
+Commit `5a91f09` thêm ba pack giàu nội dung với `demo_pack=true` nhưng dùng `review_status=approved`, `last_verified_at` và có thể phát `verified_guidance`. Đây là phê duyệt kỹ thuật cho trình diễn, không có manifest/evidence human K1. Frontend tại base chưa hiểu `demo_mode`, nên bật mode này có thể hiển thị nhầm "Đã xác minh nguồn".
+
+### Quyết định
+
+- Thêm lifecycle riêng `review_status=demo_approved` cho đúng ba pack MVP. Trạng thái này không thỏa điều kiện K1 của `TrustPolicy` và không phát `verified_guidance` hoặc `last_verified_at` như nguồn chính thức.
+- `demo_mode=true` là cờ additive bắt buộc trên mọi response từ demo pack. UI phải hiển thị watermark thường trực "Đã kiểm thử cho demo MVP" và "Không phải K1"; nếu nhận nhầm `demo_mode + verified_guidance`, UI vẫn hạ badge về official review.
+- Demo mode được phép render checklist, procedure card, steps, form schema và chạy RuleEngine deterministic để diễn tập. Verdict/finding chỉ là kết quả mô phỏng và response vẫn mang `official_review_required`; LLM chỉ diễn giải finding, không đổi verdict.
+- Feedback API chỉ nhận metadata giới hạn; không persist/log session ID, note hoặc form data. LLM gateway mặc định disabled, dùng env local/secret manager và có kill switch bằng `LLM_MODE=disabled` hoặc thiếu key.
+- Không bật legacy RAG, không deploy và không gọi provider thật trong task Phase 0-5.
+
+### Hệ quả và kiểm chứng
+
+- A6/backend tests phải chứng minh `false_verified=0` cho demo nhưng checklist/precheck vẫn hoạt động.
+- Frontend tests phải chứng minh watermark xuất hiện ở intake/checklist/precheck và badge verified không thể xuất hiện trong demo mode.
+- Gateway enabled/disabled phải giữ nguyên findings/verdict; fallback không gửi raw PII.
+- `POST /v1/feedback` là route additive; OpenAPI contract và strict validation được test.
+
+### Rollback / fallback
+
+Đặt `PROCEDURE_DATA_MODE=fixture`, `LLM_MODE=disabled` hoặc revert task commit. Không có migration, secret, cloud state hay raw data cần thu hồi.
 
 ---
 

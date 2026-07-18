@@ -23,21 +23,23 @@ const VARIANTS: Record<TrustState, { icon: string; label: string; className: str
 interface TrustBadgeProps {
   trustState: TrustState | null;
   fixtureMode?: boolean;
+  demoMode?: boolean;
 }
 
 export function resolveDisplayedTrustState(
   trustState: TrustState,
   fixtureMode?: boolean,
+  demoMode?: boolean,
 ): TrustState {
-  if (fixtureMode && trustState === "verified_guidance") {
+  if ((fixtureMode || demoMode) && trustState === "verified_guidance") {
     return "official_review_required";
   }
   return trustState;
 }
 
-export default function TrustBadge({ trustState, fixtureMode }: TrustBadgeProps) {
+export default function TrustBadge({ trustState, fixtureMode, demoMode }: TrustBadgeProps) {
   if (!trustState) return null;
-  const variant = VARIANTS[resolveDisplayedTrustState(trustState, fixtureMode)];
+  const variant = VARIANTS[resolveDisplayedTrustState(trustState, fixtureMode, demoMode)];
 
   return (
     <div className="inline-flex items-center gap-1.5 flex-wrap">
@@ -52,6 +54,14 @@ export default function TrustBadge({ trustState, fixtureMode }: TrustBadgeProps)
           <span aria-hidden="true">🧪</span>
           <span>Chế độ demo dữ liệu mẫu</span>
         </span>
+      )}
+      {demoMode && (
+        <>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-amber-300 bg-amber-50 text-[10px] font-bold text-amber-900">
+            <span>Đã kiểm thử cho demo MVP</span>
+          </span>
+          <span className="text-[10px] font-bold text-error">Không phải K1</span>
+        </>
       )}
     </div>
   );

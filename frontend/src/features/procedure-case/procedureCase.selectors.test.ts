@@ -17,6 +17,7 @@ function checklistResponse(): ChecklistResponse {
     last_verified_at: "2026-07-17",
     review_gate: null,
     fixture_mode: false,
+    demo_mode: false,
     procedure_id: "dang-ky-khai-sinh",
     procedure_name: "Đăng ký khai sinh",
     required_documents: [
@@ -98,6 +99,23 @@ describe("selectCanRunPrecheck", () => {
     };
 
     expect(selectCanRunPrecheck(state)).toBe(false);
+  });
+
+  it("allows deterministic precheck for demo-approved content without promoting trust", () => {
+    const checklist = checklistResponse();
+    const state: ProcedureCaseState = {
+      ...createInitialState("s1"),
+      checklist: {
+        ...checklist,
+        trust_state: "official_review_required",
+        demo_mode: true,
+        last_verified_at: null,
+      },
+      formDraft: { child_name: "An", dob: "2026-01-01" },
+    };
+
+    expect(selectCanRunPrecheck(state)).toBe(true);
+    expect(state.checklist?.trust_state).toBe("official_review_required");
   });
 });
 

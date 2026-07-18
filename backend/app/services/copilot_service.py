@@ -81,7 +81,11 @@ class CopilotService:
             "Đã nhận diện thủ tục trong dữ liệu thử nghiệm. Hãy kết nối Procedure Pack đã review "
             "trước khi dùng kết quả này để chuẩn bị hồ sơ thực tế."
             if metadata.fixture_mode
-            else "Hãy xác nhận thủ tục và trả lời các câu hỏi làm rõ để nhận checklist phù hợp."
+            else (
+                "Đã nhận diện thủ tục trong bộ dữ liệu demo MVP. Kết quả chỉ dùng để trình diễn."
+                if metadata.demo_mode
+                else "Hãy xác nhận thủ tục và trả lời các câu hỏi làm rõ để nhận checklist phù hợp."
+            )
         )
         return RecommendationResponse(
             **metadata.model_dump(),
@@ -124,20 +128,27 @@ class CopilotService:
             for question in pack.intake_questions
             if question.required and question.id not in context.clarification_answers
         ]
-        if metadata.trust_state == TrustState.VERIFIED_GUIDANCE and missing_questions:
-            metadata = self._trust_policy.metadata_for(
-                pack,
-                ReviewGate.U1_PROCEDURE_CONFIRMATION,
-                TrustState.NEED_MORE_INFORMATION,
+        if missing_questions and (
+            metadata.trust_state == TrustState.VERIFIED_GUIDANCE or metadata.demo_mode
+        ):
+            metadata = metadata.model_copy(
+                update={
+                    "trust_state": TrustState.NEED_MORE_INFORMATION,
+                    "review_gate": ReviewGate.U1_PROCEDURE_CONFIRMATION,
+                }
             )
 
         verified = metadata.trust_state == TrustState.VERIFIED_GUIDANCE
         demo_fixture = metadata.fixture_mode
-        content_available = verified or demo_fixture
+        content_available = verified or demo_fixture or metadata.demo_mode
         message = (
-            "Dữ liệu demo để kiểm thử checklist và biểu mẫu; không phải yêu cầu hồ sơ thật."
-            if demo_fixture
-            else "Hãy review checklist, nguồn và ngày xác minh trước khi tiếp tục."
+            "Dữ liệu đã kiểm thử cho demo MVP; không phải K1 hoặc yêu cầu hồ sơ chính thức."
+            if metadata.demo_mode
+            else (
+                "Dữ liệu demo để kiểm thử checklist và biểu mẫu; không phải yêu cầu hồ sơ thật."
+                if demo_fixture
+                else "Hãy review checklist, nguồn và ngày xác minh trước khi tiếp tục."
+            )
         )
         await self._audit_sink.emit(
             "checklist_generate",
@@ -152,7 +163,7 @@ class CopilotService:
             steps=pack.steps if content_available else [],
             form_schema=pack.form_schema if content_available else {},
             form_sections=pack.form_sections if content_available else [],
-            procedure_card=build_procedure_card(pack) if verified else None,
+            procedure_card=build_procedure_card(pack) if verified or metadata.demo_mode else None,
             journey=build_journey(pack, context),
             next_action=(
                 self._answer_questions_action()
@@ -171,7 +182,10 @@ class CopilotService:
             pack, ReviewGate.U3_PRECHECK_REVIEW, TrustState.VERIFIED_GUIDANCE
         )
 
-        if pack is None or metadata.trust_state != TrustState.VERIFIED_GUIDANCE:
+        demo_validation = bool(pack and metadata.demo_mode)
+        if pack is None or (
+            metadata.trust_state != TrustState.VERIFIED_GUIDANCE and not demo_validation
+        ):
             return ValidationResponse(
                 **metadata.model_dump(),
                 procedure_id=request.procedure_id,
@@ -203,9 +217,17 @@ class CopilotService:
             findings=findings,
             explanations=explanations,
             summary_message=(
-                "Hồ sơ đạt kiểm tra sơ bộ theo các quy tắc đã duyệt."
+                (
+                    "Dữ liệu mẫu đạt kiểm tra theo bộ quy tắc demo MVP; đây không phải kết quả K1."
+                    if demo_validation
+                    else "Hồ sơ đạt kiểm tra sơ bộ theo các quy tắc đã duyệt."
+                )
                 if verdict == "pass_preliminary"
-                else "Phát hiện thông tin cần sửa trước khi kiểm tra lại."
+                else (
+                    "Bộ quy tắc demo phát hiện thông tin mẫu cần sửa trước khi kiểm tra lại."
+                    if demo_validation
+                    else "Phát hiện thông tin cần sửa trước khi kiểm tra lại."
+                )
             ),
             journey=build_journey(pack, context),
             next_action=NextAction(

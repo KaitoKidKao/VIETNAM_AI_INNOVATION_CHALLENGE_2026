@@ -195,6 +195,7 @@ def test_openapi_exposes_current_public_routes(client: TestClient) -> None:
     assert set(paths) == {
         "/",
         "/health",
+        "/v1/feedback",
         "/v1/applications/validate",
         "/v1/intake/turn",
         "/v1/procedures",

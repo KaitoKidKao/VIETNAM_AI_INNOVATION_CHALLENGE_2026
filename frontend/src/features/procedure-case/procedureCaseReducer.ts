@@ -132,6 +132,7 @@ export function procedureCaseReducer(
         last_verified_at: response.last_verified_at,
         review_gate: response.review_gate,
         fixture_mode: response.fixture_mode,
+        demo_mode: response.demo_mode,
       };
       const availability: ProcedureCaseState["availability"] = {
         backendReachable: true,
@@ -149,7 +150,7 @@ export function procedureCaseReducer(
         availability,
       };
 
-      if (response.trust_state === "official_review_required") {
+      if (response.trust_state === "official_review_required" && !response.demo_mode) {
         return { ...base, flow: "official_review_required" };
       }
       if (response.detected_procedure_id && response.procedure) {
@@ -265,9 +266,10 @@ export function procedureCaseReducer(
         last_verified_at: response.last_verified_at,
         review_gate: response.review_gate,
         fixture_mode: response.fixture_mode,
+        demo_mode: response.demo_mode,
       };
       const canRenderDemoChecklist =
-        response.fixture_mode &&
+        (response.fixture_mode || response.demo_mode) &&
         (response.required_documents.length > 0 ||
           response.optional_documents.length > 0 ||
           Object.keys(response.form_schema.properties ?? {}).length > 0);
@@ -315,9 +317,10 @@ export function procedureCaseReducer(
         last_verified_at: response.last_verified_at,
         review_gate: response.review_gate,
         fixture_mode: response.fixture_mode,
+        demo_mode: response.demo_mode,
       };
       let flow: FlowState;
-      if (response.trust_state === "official_review_required") flow = "official_review_required";
+      if (response.trust_state === "official_review_required" && !response.demo_mode) flow = "official_review_required";
       else if (response.verdict === "needs_fix") flow = "needs_fix";
       else flow = "pass_preliminary";
       return {

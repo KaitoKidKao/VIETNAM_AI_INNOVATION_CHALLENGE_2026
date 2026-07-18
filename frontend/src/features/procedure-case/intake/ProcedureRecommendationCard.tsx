@@ -27,7 +27,11 @@ export default function ProcedureRecommendationCard({
         <p className="text-xs text-zinc-600 mt-1 leading-relaxed">{candidate.reason}</p>
       </div>
 
-      <TrustBadge trustState={trustMetadata?.trust_state ?? null} fixtureMode={trustMetadata?.fixture_mode} />
+      <TrustBadge
+        trustState={trustMetadata?.trust_state ?? null}
+        fixtureMode={trustMetadata?.fixture_mode}
+        demoMode={trustMetadata?.demo_mode}
+      />
       {trustMetadata?.source_refs && trustMetadata.source_refs.length > 0 && (
         <SourceDrawer citations={trustMetadata.source_refs} />
       )}

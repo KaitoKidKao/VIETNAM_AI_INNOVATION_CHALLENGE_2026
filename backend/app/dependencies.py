@@ -66,7 +66,7 @@ class AppContainer:
             "rag": "needs_review" if source_available else "unavailable",
             "external": "unavailable",
             "disabled": "unavailable",
-            "demo_pack": "ready",
+            "demo_pack": "demo_approved",
         }[self.settings.procedure_data_mode]
         rag_ready = self.settings.rag_mode == "rag" and source_available
         llm_ready = self.settings.llm_mode == "gateway" and bool(

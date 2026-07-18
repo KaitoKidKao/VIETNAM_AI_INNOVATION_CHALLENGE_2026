@@ -17,6 +17,7 @@ import ChecklistPanel from "./checklist/ChecklistPanel";
 import DynamicFormRenderer from "./form/DynamicFormRenderer";
 import PrecheckPanel from "./validation/PrecheckPanel";
 import OfficialReviewCard from "./trust/OfficialReviewCard";
+import DemoModeBanner from "./trust/DemoModeBanner";
 
 const VNGovLogo = ({ className = "w-8 h-8" }: { className?: string }) => (
   <svg className={className} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -60,6 +61,7 @@ export default function ProcedureWorkspace({
   const canRunPrecheck = selectCanRunPrecheck(state);
   const availabilityBanner = selectAvailabilityBanner(state);
   const showQuickPicks = state.transcript.length <= 1;
+  const demoMode = Boolean(state.trustMetadata?.demo_mode || state.checklist?.demo_mode);
 
   const officialReviewMessage =
     state.lastValidationResponse?.summary_message ??
@@ -133,6 +135,8 @@ export default function ProcedureWorkspace({
           {availabilityBanner.message}
         </div>
       )}
+
+      {demoMode && <DemoModeBanner />}
 
       {/* Mobile tabs */}
       <div className="flex md:hidden border-b border-border-slate bg-card-bg shrink-0" role="tablist" aria-label="Chuyển đổi khung nhìn">
@@ -276,7 +280,9 @@ export default function ProcedureWorkspace({
                   <div className="bg-card-bg border border-border-slate rounded-xl p-5 shadow-sm space-y-4">
                     <div className="border-b border-border-slate pb-3 mb-3 text-left">
                       <span className="text-[8px] font-bold text-accent tracking-wider uppercase block">
-                        {state.checklist.fixture_mode ? "BIỂU MẪU DEMO" : "TỜ KHAI ĐIỆN TỬ SƠ BỘ"}
+                        {state.checklist.fixture_mode || state.checklist.demo_mode
+                          ? "BIỂU MẪU DEMO MVP"
+                          : "TỜ KHAI ĐIỆN TỬ SƠ BỘ"}
                       </span>
                       <h3 className="text-sm font-bold text-primary">{state.checklist.procedure_name}</h3>
                     </div>

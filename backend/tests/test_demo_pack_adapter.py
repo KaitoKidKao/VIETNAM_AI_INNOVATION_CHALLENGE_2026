@@ -23,15 +23,15 @@ def client() -> TestClient:
     return TestClient(create_app(settings=settings))
 
 
-def test_all_three_demo_packs_load_approved_with_demo_watermark() -> None:
+def test_all_three_demo_packs_load_demo_approved_with_watermark() -> None:
     packs = load_demo_packs()
 
     assert set(packs) == MVP_IDS
     for pack in packs.values():
-        assert pack.review_status == ReviewStatus.APPROVED
+        assert pack.review_status == ReviewStatus.DEMO_APPROVED
         assert pack.demo_pack is True
         assert pack.checksum
-        assert pack.last_verified_at is not None
+        assert pack.last_verified_at is None
         assert pack.source_refs
         assert pack.intake_questions
         assert len(pack.required_documents) >= 1
@@ -66,15 +66,16 @@ def test_procedures_list_carries_demo_mode(client: TestClient) -> None:
     assert response.status_code == 200
     assert {item["procedure_id"] for item in response.json()} == MVP_IDS
     assert all(item["demo_mode"] is True for item in response.json())
-    assert all(item["review_status"] == "approved" for item in response.json())
+    assert all(item["review_status"] == "demo_approved" for item in response.json())
 
 
-def test_health_reports_ready_guidance_for_demo_pack_mode(client: TestClient) -> None:
+def test_health_reports_degraded_demo_guidance(client: TestClient) -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
     assert response.json()["capabilities"]["procedure_data"] == "demo_pack"
-    assert response.json()["capabilities"]["procedure_guidance"] == "ready"
+    assert response.json()["status"] == "degraded"
+    assert response.json()["capabilities"]["procedure_guidance"] == "demo_approved"
 
 
 def test_recommend_supports_accented_vietnamese(client: TestClient) -> None:
@@ -89,7 +90,7 @@ def test_recommend_supports_accented_vietnamese(client: TestClient) -> None:
     assert response.json()["fixture_mode"] is False
 
 
-def test_checklist_is_verified_with_demo_watermark_after_clarifications(
+def test_checklist_is_demo_only_after_clarifications(
     client: TestClient,
 ) -> None:
     response = client.post(
@@ -99,10 +100,10 @@ def test_checklist_is_verified_with_demo_watermark_after_clarifications(
     body = response.json()
 
     assert response.status_code == 200
-    assert body["trust_state"] == "verified_guidance"
+    assert body["trust_state"] == "official_review_required"
     assert body["demo_mode"] is True
     assert body["fixture_mode"] is False
-    assert body["last_verified_at"] is not None
+    assert body["last_verified_at"] is None
     assert body["procedure_card"]["authority"]
     assert len(body["required_documents"]) >= 3
     assert body["form_schema"]["properties"]
@@ -154,7 +155,7 @@ def test_precheck_flags_errors_and_passes_after_fix(client: TestClient) -> None:
     )
 
     assert bad.status_code == 200
-    assert bad.json()["trust_state"] == "verified_guidance"
+    assert bad.json()["trust_state"] == "official_review_required"
     assert bad.json()["demo_mode"] is True
     assert bad.json()["verdict"] == "needs_fix"
     flagged_rules = {finding["rule_id"] for finding in bad.json()["findings"]}
@@ -208,7 +209,7 @@ def test_cross_field_and_conditional_rules_for_other_packs(client: TestClient) -
     assert "HKD-TYP-01" in hkd_rules
 
 
-def test_production_allows_demo_pack_mode() -> None:
+def test_production_explicit_demo_pack_mode_stays_degraded() -> None:
     settings = Settings(
         app_env="production",
         procedure_data_mode="demo_pack",
@@ -220,17 +221,50 @@ def test_production_allows_demo_pack_mode() -> None:
     catalog = production_client.get("/v1/procedures")
 
     assert health.status_code == 200
-    assert health.json()["capabilities"]["procedure_guidance"] == "ready"
+    assert health.json()["status"] == "degraded"
+    assert health.json()["capabilities"]["procedure_guidance"] == "demo_approved"
     assert catalog.status_code == 200
     assert len(catalog.json()) == 3
 
 
-def test_openapi_route_set_is_unchanged(client: TestClient) -> None:
+def test_demo_mode_never_emits_verified_guidance(client: TestClient) -> None:
+    responses = [
+        client.post(
+            "/v1/procedures/recommend",
+            json={"need_text": "Tôi muốn đăng ký khai sinh"},
+        ),
+        client.post(
+            "/v1/intake/turn",
+            json={
+                "session_id": "demo-false-verified-gate",
+                "message": "Tôi muốn đăng ký khai sinh",
+            },
+        ),
+        client.post(
+            "/v1/procedures/dang-ky-khai-sinh/checklist",
+            json={"clarification_answers": KHAI_SINH_ANSWERS},
+        ),
+        client.post(
+            "/v1/applications/validate",
+            json={"procedure_id": "dang-ky-khai-sinh", "form_data": {}},
+        ),
+    ]
+
+    assert all(response.status_code == 200 for response in responses)
+    assert all(response.json()["demo_mode"] is True for response in responses)
+    assert all(
+        response.json()["trust_state"] != "verified_guidance"
+        for response in responses
+    )
+
+
+def test_openapi_route_set_includes_feedback(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
 
     assert set(paths) == {
         "/",
         "/health",
+        "/v1/feedback",
         "/v1/applications/validate",
         "/v1/intake/turn",
         "/v1/procedures",

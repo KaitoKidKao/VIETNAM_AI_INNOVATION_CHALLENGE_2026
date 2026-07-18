@@ -13,7 +13,7 @@ from app.dependencies import AppContainer, build_container
 from app.models.common import APIError, ErrorEnvelope
 from app.models.errors import AppError
 from app.rate_limit import InMemoryRateLimiter
-from app.routers import health, intake, procedures, rag, validation
+from app.routers import feedback, health, intake, procedures, rag, validation
 
 
 def _error_response(
@@ -155,6 +155,7 @@ def create_app(
     app.include_router(procedures.router)
     app.include_router(intake.router)
     app.include_router(validation.router)
+    app.include_router(feedback.router)
     app.include_router(rag.router)
     return app
 
