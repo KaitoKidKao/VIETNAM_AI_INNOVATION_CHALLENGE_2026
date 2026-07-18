@@ -62,6 +62,14 @@ class RAGService:
         top_k: int = 5,
     ) -> EvidenceSearchResponse:
         chunks = _cached_chunks()
+        if not query.strip():
+            return EvidenceSearchResponse(
+                status="blocked",
+                reason="query_required",
+                hits=[],
+                store_path=str(DEFAULT_CLEAN_CHUNKS_PATH),
+                loaded_chunks=len(chunks),
+            )
         rag_procedure_id = (
             RUNTIME_TO_RAG_PROCEDURE_IDS.get(procedure_id, procedure_id)
             if procedure_id

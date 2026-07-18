@@ -1,43 +1,48 @@
-from typing import Dict, Any, List, Optional
-from app.models.checklist import ChecklistResponse, ChecklistItem, Step
-from app.models.common import Citation
+from __future__ import annotations
+
+from typing import Any
+
+from app.models.checklist import ChecklistResponse
+from app.models.common import Citation, ReviewGate, TrustState
+from app.models.procedure import ChecklistItem, ProcedureStep
 from app.services.rag_service import RAGService
+
 
 PROCEDURES_DB = {
     "dang-ky-khai-sinh": {
         "id": "dang-ky-khai-sinh",
-        "name": "Đăng ký khai sinh",
-        "jurisdiction": "Cấp xã/phường/thị trấn",
-        "authority": "Ủy ban nhân dân cấp xã",
+        "name": "Dang ky khai sinh",
+        "jurisdiction": "Cap xa/phuong/thi tran",
+        "authority": "Uy ban nhan dan cap xa",
         "effective_from": "2024-01-01",
         "effective_to": None,
         "last_verified_at": "2026-07-17",
-        "trust_state": "verified_guidance"
+        "trust_state": "verified_guidance",
     },
     "dang-ky-thuong-tru": {
         "id": "dang-ky-thuong-tru",
-        "name": "Đăng ký thường trú",
-        "jurisdiction": "Cấp xã/phường/thị trấn",
-        "authority": "Công an cấp xã",
+        "name": "Dang ky thuong tru",
+        "jurisdiction": "Cap xa/phuong/thi tran",
+        "authority": "Cong an cap xa",
         "effective_from": "2024-01-01",
         "effective_to": None,
         "last_verified_at": "2026-07-17",
-        "trust_state": "verified_guidance"
+        "trust_state": "verified_guidance",
     },
     "dang-ky-ho-kinh-doanh": {
         "id": "dang-ky-ho-kinh-doanh",
-        "name": "Đăng ký thành lập hộ kinh doanh",
-        "jurisdiction": "Cấp huyện/quận/thị xã",
-        "authority": "Phòng Tài chính - Kế hoạch cấp huyện",
+        "name": "Dang ky thanh lap ho kinh doanh",
+        "jurisdiction": "Cap huyen/quan/thi xa",
+        "authority": "Phong Tai chinh - Ke hoach cap huyen",
         "effective_from": "2024-01-01",
         "effective_to": None,
         "last_verified_at": "2026-07-17",
-        "trust_state": "verified_guidance"
-    }
+        "trust_state": "verified_guidance",
+    },
 }
 
 
-def _rag_citations(procedure_id: str, top_k: int = 3) -> List[Citation]:
+def _rag_citations(procedure_id: str, top_k: int = 3) -> list[Citation]:
     evidence = RAGService.search_evidence(
         query=f"{PROCEDURES_DB[procedure_id]['name']} thanh phan ho so",
         procedure_id=procedure_id,
@@ -45,111 +50,137 @@ def _rag_citations(procedure_id: str, top_k: int = 3) -> List[Citation]:
     )
     return [
         Citation(
+            ref_id=hit.chunk_id,
             title=f"Clean RAG evidence {hit.source_id}",
-            url=hit.source_refs[0] if hit.source_refs else None,
-            ref_code=hit.chunk_id,
+            url_or_ref=hit.source_refs[0] if hit.source_refs else None,
         )
         for hit in evidence.hits
     ]
 
+
+def _base_citations() -> list[Citation]:
+    return [
+        Citation(
+            ref_id="LUAT-HOTICH-2014",
+            title="Luat Ho tich so 60/2014/QH13",
+            url_or_ref="https://chinhphu.vn",
+        ),
+        Citation(
+            ref_id="ND-123-2015",
+            title="Nghi dinh 123/2015/ND-CP",
+            url_or_ref="https://chinhphu.vn",
+        ),
+    ]
+
+
 class ProcedureService:
     @staticmethod
-    def list_procedures() -> List[Dict[str, Any]]:
+    def list_procedures() -> list[dict[str, Any]]:
         return list(PROCEDURES_DB.values())
 
     @staticmethod
-    def get_procedure(procedure_id: str) -> Optional[Dict[str, Any]]:
+    def get_procedure(procedure_id: str) -> dict[str, Any] | None:
         return PROCEDURES_DB.get(procedure_id)
 
     @staticmethod
     def get_checklist(procedure_id: str) -> ChecklistResponse:
-        citations = [
-            Citation(title="Luật Hộ tịch số 60/2014/QH13", url="https://chinhphu.vn", ref_code="LUAT-HOTICH-2014"),
-            Citation(title="Nghị định 123/2015/NĐ-CP", url="https://chinhphu.vn", ref_code="ND-123-2015")
-        ]
+        citations = _base_citations()
+        sources = [*citations, *_rag_citations(procedure_id)]
 
         if procedure_id == "dang-ky-khai-sinh":
-            return ChecklistResponse(
-                procedure_id=procedure_id,
-                procedure_name=PROCEDURES_DB[procedure_id]["name"],
-                required_documents=[
-                    ChecklistItem(
-                        id="giay-chung-sinh",
-                        title="Giấy chứng sinh",
-                        required=True,
-                        description="Bản chính do cơ sở y tế nơi trẻ sinh ra cấp. Nếu không có giấy chứng sinh thì nộp văn bản xác nhận của người làm chứng.",
-                        citations=[citations[1]]
-                    ),
-                    ChecklistItem(
-                        id="cccd-cha-me",
-                        title="Căn cước công dân của cha và mẹ",
-                        required=True,
-                        description="Bản chụp xuất trình kèm bản chính để đối chiếu.",
-                        citations=[citations[0]]
-                    )
-                ],
-                optional_documents=[
-                    ChecklistItem(
-                        id="giay-dang-ky-ket-hon",
-                        title="Giấy chứng nhận kết hôn",
-                        required=False,
-                        description="Xuất trình nếu cha mẹ có đăng ký kết hôn để xác định quan hệ cha, mẹ, con.",
-                        citations=[citations[0]]
-                    )
-                ],
-                steps=[
-                    Step(
-                        step_number=1,
-                        title="Chuẩn bị và nộp hồ sơ",
-                        description="Người đi đăng ký chuẩn bị đầy đủ giấy tờ và nộp tại UBND cấp xã nơi cư trú của cha hoặc mẹ.",
-                        processing_time="Giải quyết ngay trong ngày",
-                        fees="Miễn phí"
-                    )
-                ],
-                form_schema={
-                    "type": "object",
-                    "properties": {
-                        "ho_ten_tre": {"type": "string", "title": "Họ và tên trẻ", "minLength": 2},
-                        "ngay_sinh_tre": {"type": "string", "title": "Ngày sinh của trẻ", "format": "date"},
-                        "ho_ten_cha": {"type": "string", "title": "Họ và tên cha"},
-                        "ho_ten_me": {"type": "string", "title": "Họ và tên mẹ"}
+            required_documents = [
+                ChecklistItem(
+                    id="giay-chung-sinh",
+                    label="Giay chung sinh",
+                    kind="required",
+                    description="Ban chinh do co so y te noi tre sinh ra cap.",
+                    source_ref_ids=[citations[1].ref_id],
+                ),
+                ChecklistItem(
+                    id="cccd-cha-me",
+                    label="Can cuoc cong dan cua cha va me",
+                    kind="required",
+                    description="Xuat trinh giay to tuy than de doi chieu.",
+                    source_ref_ids=[citations[0].ref_id],
+                ),
+            ]
+            optional_documents = [
+                ChecklistItem(
+                    id="giay-dang-ky-ket-hon",
+                    label="Giay chung nhan ket hon",
+                    kind="optional",
+                    description="Xuat trinh neu cha me co dang ky ket hon.",
+                    source_ref_ids=[citations[0].ref_id],
+                )
+            ]
+            steps = [
+                ProcedureStep(
+                    order=1,
+                    title="Chuan bi va nop ho so",
+                    detail="Chuan bi day du giay to va nop tai co quan co tham quyen.",
+                )
+            ]
+            form_schema = {
+                "type": "object",
+                "properties": {
+                    "ho_ten_tre": {
+                        "type": "string",
+                        "title": "Ho va ten tre",
+                        "minLength": 2,
                     },
-                    "required": ["ho_ten_tre", "ngay_sinh_tre", "ho_ten_me"]
+                    "ngay_sinh_tre": {
+                        "type": "string",
+                        "title": "Ngay sinh cua tre",
+                        "format": "date",
+                    },
+                    "ho_ten_cha": {"type": "string", "title": "Ho va ten cha"},
+                    "ho_ten_me": {"type": "string", "title": "Ho va ten me"},
                 },
-                effective_date="2024-01-01",
-                sources=[*citations, *_rag_citations(procedure_id)]
-            )
+                "required": ["ho_ten_tre", "ngay_sinh_tre", "ho_ten_me"],
+            }
+            message = "Checklist dang ky khai sinh da san sang."
+        else:
+            required_documents = [
+                ChecklistItem(
+                    id="doc-required-1",
+                    label="To khai theo mau quy dinh",
+                    kind="required",
+                    description="Dien day du thong tin vao bieu mau do nha nuoc ban hanh.",
+                    source_ref_ids=[citations[0].ref_id],
+                )
+            ]
+            optional_documents = []
+            steps = [
+                ProcedureStep(
+                    order=1,
+                    title="Nop ho so truc tuyen hoac truc tiep",
+                    detail="Nop ho so qua Cong dich vu cong hoac tai bo phan Mot cua.",
+                )
+            ]
+            form_schema = {
+                "type": "object",
+                "properties": {
+                    "ho_ten_nguoi_khai": {
+                        "type": "string",
+                        "title": "Ho va ten nguoi khai",
+                        "minLength": 2,
+                    },
+                    "so_dien_thoai": {"type": "string", "title": "So dien thoai"},
+                },
+                "required": ["ho_ten_nguoi_khai"],
+            }
+            message = "Checklist thu tuc da san sang."
 
         return ChecklistResponse(
             procedure_id=procedure_id,
             procedure_name=PROCEDURES_DB[procedure_id]["name"],
-            required_documents=[
-                ChecklistItem(
-                    id="doc-required-1",
-                    title="Tờ khai theo mẫu quy định",
-                    required=True,
-                    description="Điền đầy đủ thông tin vào biểu mẫu do nhà nước ban hành.",
-                    citations=[citations[0]]
-                )
-            ],
-            optional_documents=[],
-            steps=[
-                Step(
-                    step_number=1,
-                    title="Nộp hồ sơ trực tuyến hoặc trực tiếp",
-                    description="Nộp hồ sơ qua Cổng dịch vụ công hoặc tại bộ phận Một cửa.",
-                    processing_time="3-5 ngày làm việc",
-                    fees="Tùy trường hợp"
-                )
-            ],
-            form_schema={
-                "type": "object",
-                "properties": {
-                    "ho_ten_nguoi_khai": {"type": "string", "title": "Họ và tên người khai", "minLength": 2},
-                    "so_dien_thoai": {"type": "string", "title": "Số điện thoại"}
-                },
-                "required": ["ho_ten_nguoi_khai"]
-            },
-            effective_date="2024-01-01",
-            sources=[*citations, *_rag_citations(procedure_id)]
+            required_documents=required_documents,
+            optional_documents=optional_documents,
+            steps=steps,
+            form_schema=form_schema,
+            message_plain=message,
+            trust_state=TrustState.VERIFIED_GUIDANCE,
+            source_refs=sources,
+            review_gate=ReviewGate.U2_CHECKLIST_REVIEW,
+            fixture_mode=True,
         )

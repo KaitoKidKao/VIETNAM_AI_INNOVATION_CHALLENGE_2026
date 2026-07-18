@@ -14,6 +14,7 @@ BACKEND_ROOT = REPOSITORY_ROOT / "backend"
 sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.rag.chunking import ChunkSourceMetadata, build_evidence_chunks
+from app.config import ENV_FILES, Settings, get_settings
 from app.rag.normalization import normalize_document
 from app.rag.parsing import parse_sections
 from app.models.rag import EvidenceHit
@@ -46,6 +47,31 @@ def _sample_chunk():
 
 
 class RuntimeRAGServiceTests(unittest.TestCase):
+    def test_settings_use_repository_and_backend_env_files(self) -> None:
+        self.assertEqual(REPOSITORY_ROOT / ".env", ENV_FILES[0])
+        self.assertEqual(BACKEND_ROOT / ".env", ENV_FILES[1])
+
+    def test_openai_client_reads_current_settings_when_created(self) -> None:
+        original = get_settings()
+        get_settings.cache_clear()
+        try:
+            configured = Settings(
+                openai_api_key="test-runtime-key",
+                openai_model="test-runtime-model",
+            )
+            from app.services import llm_service
+
+            original_get_settings = llm_service.get_settings
+            llm_service.get_settings = lambda: configured
+            client = OpenAILLMClient()
+        finally:
+            llm_service.get_settings = original_get_settings
+            get_settings.cache_clear()
+
+        self.assertEqual("test-runtime-key", client.api_key)
+        self.assertEqual("test-runtime-model", client.model)
+        self.assertIsNotNone(original)
+
     def test_load_clean_chunks_from_jsonl(self) -> None:
         chunk = _sample_chunk()
         with tempfile.TemporaryDirectory() as directory:
@@ -73,6 +99,13 @@ class RuntimeRAGServiceTests(unittest.TestCase):
         self.assertEqual("ok", result.status)
         self.assertEqual("runtime-source", result.hits[0].source_id)
 
+    def test_search_evidence_fails_closed_for_empty_query(self) -> None:
+        result = rag_service.RAGService.search_evidence("")
+
+        self.assertEqual("blocked", result.status)
+        self.assertEqual("query_required", result.reason)
+        self.assertEqual([], result.hits)
+
     def test_get_route_helper_supports_browser_smoke(self) -> None:
         chunk = _sample_chunk()
         original = rag_service._cached_chunks
@@ -99,7 +132,7 @@ class RuntimeRAGServiceTests(unittest.TestCase):
             rag_service._cached_chunks = original
 
         self.assertTrue(
-            any(source.ref_code == chunk.chunk_id for source in response.sources)
+            any(source.ref_id == chunk.chunk_id for source in response.source_refs)
         )
 
     def test_grounded_answer_uses_llm_when_evidence_exists(self) -> None:
@@ -148,6 +181,7 @@ class RuntimeRAGServiceTests(unittest.TestCase):
         self.assertIn("CÂU HỎI NGƯỜI DÙNG", prompt)
         self.assertIn("Trả lời ngắn gọn bằng tiếng Việt có dấu.", prompt)
         self.assertIn("không dùng nhãn [chunk_id: abc123]", prompt)
+        self.assertIn("biến thể đặc biệt", prompt)
 
     def test_grounded_answer_fails_closed_without_evidence(self) -> None:
         original = rag_service._cached_chunks

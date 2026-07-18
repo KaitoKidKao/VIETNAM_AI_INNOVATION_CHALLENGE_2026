@@ -70,6 +70,55 @@ interface ValidationResponse {
   summary: string;
 }
 
+interface EvidenceHit {
+  chunk_id: string;
+  source_id: string;
+  source_refs: string[];
+}
+
+interface GroundedAnswerResponse {
+  status: "ok" | "official_review_required" | string;
+  reason?: string | null;
+  answer?: string | null;
+  model: string;
+  citations: string[];
+  evidence: EvidenceHit[];
+}
+
+const API_BASE_URL = "http://localhost:8000";
+
+const inferProcedureId = (text: string): string | null => {
+  const query = text.toLowerCase();
+  if (query.includes("khai sinh") || query.includes("birth") || query.includes("sinh con")) {
+    return "dang-ky-khai-sinh";
+  }
+  if (query.includes("thường trú") || query.includes("thuong tru") || query.includes("residence")) {
+    return "dang-ky-thuong-tru";
+  }
+  if (query.includes("hộ kinh doanh") || query.includes("ho kinh doanh") || query.includes("business")) {
+    return "dang-ky-ho-kinh-doanh";
+  }
+  return null;
+};
+
+const evidenceToSources = (evidence: EvidenceHit[]): Citation[] => {
+  return evidence.slice(0, 3).map((hit) => ({
+    title: `Nguồn thủ tục ${hit.source_id}`,
+    url: hit.source_refs[0] || "#",
+    ref_code: hit.chunk_id,
+  }));
+};
+
+const failClosedMessage = (reason?: string | null): string => {
+  if (reason === "missing_openai_api_key") {
+    return "Hệ thống đã tìm thấy căn cứ nhưng dịch vụ AI chưa được cấu hình. Vui lòng khởi động lại backend sau khi kiểm tra cấu hình OpenAI.";
+  }
+  if (reason === "query_required") {
+    return "Bạn hãy nhập câu hỏi cụ thể hơn để tôi có thể tra cứu căn cứ phù hợp.";
+  }
+  return "Tôi chưa có đủ căn cứ đã duyệt để trả lời chắc chắn. Vui lòng kiểm tra lại với nguồn chính thức hoặc cán bộ phụ trách.";
+};
+
 const TrongDongPattern = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
@@ -254,7 +303,7 @@ export default function Home() {
     setMessages([
       {
         role: "assistant",
-        content: "Xin chào! Tôi là **VNGov**, trợ lý hướng dẫn và tiền kiểm hồ sơ hành chính công trực tuyến của bạn.\n\nTải dữ liệu của tôi được thiết kế theo đúng quy định pháp lý hành chính hiện hành. Bạn đang cần thực hiện thủ tục nào dưới đây?",
+        content: "Xin chào! Tôi là VNGov, trợ lý hướng dẫn và tiền kiểm hồ sơ hành chính công trực tuyến của bạn.\n\nDữ liệu của tôi được xây dựng từ nguồn thủ tục hành chính đã được duyệt. Bạn đang cần thực hiện thủ tục nào?",
       },
     ]);
     checkBackendHealth();
@@ -267,7 +316,7 @@ export default function Home() {
 
   const checkBackendHealth = async () => {
     try {
-      const res = await fetch("http://localhost:8000/health", { method: "GET" });
+      const res = await fetch(`${API_BASE_URL}/health`, { method: "GET" });
       if (res.ok) {
         setBackendHealth("online");
       } else {
@@ -298,7 +347,7 @@ export default function Home() {
   // Fetch Checklist & Form Schema from Backend
   const fetchChecklist = async (procedureId: string) => {
     try {
-      const res = await fetch(`http://localhost:8000/v1/procedures/${procedureId}/checklist`, {
+      const res = await fetch(`${API_BASE_URL}/v1/procedures/${procedureId}/checklist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_answers: {} }),
@@ -360,6 +409,47 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      const inferredProcedureId = currentProcedureId || inferProcedureId(userMsg);
+      const ragRes = await fetch(`${API_BASE_URL}/v1/rag/answer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          query: userMsg,
+          procedure_id: inferredProcedureId,
+          top_k: 3,
+        }),
+      });
+
+      if (ragRes.ok) {
+        const ragData: GroundedAnswerResponse = await ragRes.json();
+        if (ragData.status === "ok" && ragData.answer) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: ragData.answer || "",
+              sources: evidenceToSources(ragData.evidence || []),
+            },
+          ]);
+
+          if (inferredProcedureId && inferredProcedureId !== currentProcedureId) {
+            setCurrentProcedureId(inferredProcedureId);
+            await fetchChecklist(inferredProcedureId);
+            setActiveLeftTab("checklist");
+          }
+          return;
+        }
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: failClosedMessage(ragData.reason),
+            sources: evidenceToSources(ragData.evidence || []),
+          },
+        ]);
+        return;
+      }
+
       const chatPayload = {
         session_id: sessionId,
         messages: [
@@ -369,7 +459,7 @@ export default function Home() {
         current_procedure_id: currentProcedureId,
       };
 
-      const res = await fetch("http://localhost:8000/v1/intake/turn", {
+      const res = await fetch(`${API_BASE_URL}/v1/intake/turn`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(chatPayload),
@@ -431,7 +521,7 @@ export default function Home() {
         form_data: formData,
       };
 
-      const res = await fetch("http://localhost:8000/v1/applications/validate", {
+      const res = await fetch(`${API_BASE_URL}/v1/applications/validate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(validatePayload),
@@ -990,14 +1080,18 @@ export default function Home() {
                         <ul className="list-disc pl-4 space-y-1 font-medium">
                           {msg.sources.map((src, i) => (
                             <li key={i}>
-                              <a
-                                href={src.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-accent underline hover:text-accent-hover transition-colors"
-                              >
-                                {src.title} ({src.ref_code})
-                              </a>
+                              {src.url && src.url !== "#" ? (
+                                <a
+                                  href={src.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-accent underline hover:text-accent-hover transition-colors"
+                                >
+                                  {src.title} ({src.ref_code})
+                                </a>
+                              ) : (
+                                <span>{src.title} ({src.ref_code})</span>
+                              )}
                             </li>
                           ))}
                         </ul>

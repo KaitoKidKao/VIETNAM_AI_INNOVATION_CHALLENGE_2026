@@ -5,52 +5,16 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-<<<<<<< HEAD
-from app.config import ALLOWED_ORIGINS
-from app.routers import health, procedures, intake, validation, rag
-=======
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
->>>>>>> ddc7b1c1b86ad8bb29a4c1b0475fe5e483cb0750
 
 from app.config import Settings, get_settings
 from app.dependencies import AppContainer, build_container
 from app.models.common import APIError, ErrorEnvelope
 from app.models.errors import AppError
 from app.rate_limit import InMemoryRateLimiter
-from app.routers import health, intake, procedures, validation
+from app.routers import health, intake, procedures, rag, validation
 
-<<<<<<< HEAD
-
-@app.get("/")
-def root():
-    return {
-        "service": "AI Procedure Copilot API",
-        "status": "ok",
-        "docs": "/docs",
-        "health": "/health",
-        "rag_search_get": "/v1/rag/search?query=giay%20chung%20sinh&procedure_id=dang-ky-khai-sinh&top_k=3",
-        "rag_search_post": "/v1/rag/search",
-        "rag_answer_get": "/v1/rag/answer?query=giay%20chung%20sinh&procedure_id=dang-ky-khai-sinh&top_k=3",
-        "rag_answer_post": "/v1/rag/answer",
-    }
-
-# Configure CORS for frontend integration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Register routers
-app.include_router(health.router)
-app.include_router(procedures.router)
-app.include_router(intake.router)
-app.include_router(validation.router)
-app.include_router(rag.router)
-=======
 
 def _error_response(
     request: Request,
@@ -61,12 +25,20 @@ def _error_response(
 ) -> JSONResponse:
     request_id = getattr(request.state, "request_id", "unknown")
     payload = ErrorEnvelope(
-        error=APIError(code=code, message=message, request_id=request_id, details=details or [])
+        error=APIError(
+            code=code,
+            message=message,
+            request_id=request_id,
+            details=details or [],
+        )
     )
     return JSONResponse(status_code=status_code, content=payload.model_dump())
 
 
-def create_app(settings: Settings | None = None, container: AppContainer | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    container: AppContainer | None = None,
+) -> FastAPI:
     runtime_settings = settings or get_settings()
     app = FastAPI(
         title="AI Procedure Copilot API",
@@ -75,7 +47,8 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
     )
     app.state.container = container or build_container(runtime_settings)
     rate_limiter = InMemoryRateLimiter(
-        runtime_settings.rate_limit_requests, runtime_settings.rate_limit_window_seconds
+        runtime_settings.rate_limit_requests,
+        runtime_settings.rate_limit_window_seconds,
     )
 
     app.add_middleware(
@@ -110,7 +83,9 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
             elif (
                 runtime_settings.rate_limit_enabled
                 and request.url.path.startswith("/v1/")
-                and not rate_limiter.allow(request.client.host if request.client else "unknown")
+                and not rate_limiter.allow(
+                    request.client.host if request.client else "unknown"
+                )
             ):
                 response = _error_response(
                     request,
@@ -125,14 +100,22 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
 
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
-        return _error_response(request, exc.status_code, exc.code, exc.message, exc.details)
+        return _error_response(
+            request,
+            exc.status_code,
+            exc.code,
+            exc.message,
+            exc.details,
+        )
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(
-        request: Request, exc: RequestValidationError
+        request: Request,
+        exc: RequestValidationError,
     ) -> JSONResponse:
         details = [
-            {"location": list(error["loc"]), "type": error["type"]} for error in exc.errors()
+            {"location": list(error["loc"]), "type": error["type"]}
+            for error in exc.errors()
         ]
         return _error_response(
             request,
@@ -143,7 +126,10 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def http_error_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    async def http_error_handler(
+        request: Request,
+        exc: StarletteHTTPException,
+    ) -> JSONResponse:
         code = "route_not_found" if exc.status_code == 404 else "http_error"
         message = (
             "Không tìm thấy endpoint yêu cầu."
@@ -152,12 +138,25 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
         )
         return _error_response(request, exc.status_code, code, message)
 
+    @app.get("/")
+    def root():
+        return {
+            "service": "AI Procedure Copilot API",
+            "status": "ok",
+            "docs": "/docs",
+            "health": "/health",
+            "rag_search_get": "/v1/rag/search?query=giay%20chung%20sinh&procedure_id=dang-ky-khai-sinh&top_k=3",
+            "rag_search_post": "/v1/rag/search",
+            "rag_answer_get": "/v1/rag/answer?query=giay%20chung%20sinh&procedure_id=dang-ky-khai-sinh&top_k=3",
+            "rag_answer_post": "/v1/rag/answer",
+        }
+
     app.include_router(health.router)
     app.include_router(procedures.router)
     app.include_router(intake.router)
     app.include_router(validation.router)
+    app.include_router(rag.router)
     return app
 
 
 app = create_app()
->>>>>>> ddc7b1c1b86ad8bb29a4c1b0475fe5e483cb0750

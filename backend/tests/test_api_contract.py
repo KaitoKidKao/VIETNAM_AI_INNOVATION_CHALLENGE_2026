@@ -174,16 +174,19 @@ def test_approved_adapter_enables_deterministic_precheck() -> None:
     assert valid.json()["findings"] == []
 
 
-def test_openapi_exposes_exactly_six_public_routes(client: TestClient) -> None:
+def test_openapi_exposes_current_public_routes(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
 
     assert set(paths) == {
+        "/",
         "/health",
+        "/v1/applications/validate",
+        "/v1/intake/turn",
         "/v1/procedures",
         "/v1/procedures/{procedure_id}/checklist",
         "/v1/procedures/recommend",
-        "/v1/intake/turn",
-        "/v1/applications/validate",
+        "/v1/rag/answer",
+        "/v1/rag/search",
     }
 
 
