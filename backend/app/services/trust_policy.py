@@ -35,7 +35,7 @@ class TrustPolicy:
             trust_state=trust_state,
             procedure_version=pack.version,
             source_refs=pack.source_refs,
-            last_verified_at=pack.last_verified_at,
+            last_verified_at=pack.last_verified_at if can_verify else None,
             review_gate=review_gate,
             fixture_mode=pack.review_status == ReviewStatus.FIXTURE,
         )

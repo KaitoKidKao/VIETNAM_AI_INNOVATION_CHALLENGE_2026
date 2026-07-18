@@ -83,6 +83,22 @@ describe("selectCanRunPrecheck", () => {
     const filled: ProcedureCaseState = { ...state, formDraft: { child_name: "An", dob: "2026-01-01" } };
     expect(selectCanRunPrecheck(filled)).toBe(true);
   });
+
+  it("stays disabled for a demo fixture without verified guidance", () => {
+    const checklist = checklistResponse();
+    const state: ProcedureCaseState = {
+      ...createInitialState("s1"),
+      checklist: {
+        ...checklist,
+        trust_state: "official_review_required",
+        fixture_mode: true,
+        last_verified_at: null,
+      },
+      formDraft: { child_name: "An", dob: "2026-01-01" },
+    };
+
+    expect(selectCanRunPrecheck(state)).toBe(false);
+  });
 });
 
 describe("resolveCitations", () => {

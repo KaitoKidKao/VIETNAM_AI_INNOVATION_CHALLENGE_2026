@@ -118,8 +118,12 @@ def test_fixture_checklist_and_precheck_fail_closed(client: TestClient) -> None:
     assert checklist.status_code == 200
     assert checklist.json()["fixture_mode"] is True
     assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["last_verified_at"] is None
     assert checklist.json()["procedure_card"] is None
-    assert checklist.json()["form_schema"] == {}
+    assert checklist.json()["required_documents"]
+    assert checklist.json()["steps"]
+    assert checklist.json()["form_schema"]["properties"]
+    assert "không phải yêu cầu hồ sơ thật" in checklist.json()["message_plain"]
     assert validation.status_code == 200
     assert validation.json()["verdict"] is None
     assert validation.json()["trust_state"] == "official_review_required"

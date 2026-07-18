@@ -149,6 +149,33 @@ describe("procedureCaseReducer — gates U1/U2/U3", () => {
 });
 
 describe("procedureCaseReducer — official_review_required override", () => {
+  it("renders a non-verified fixture checklist for the safe demo flow", () => {
+    const state = procedureCaseReducer(createInitialState("s1"), {
+      type: "CHECKLIST_RESPONSE_RECEIVED",
+      response: checklistResponse({
+        trust_state: "official_review_required",
+        fixture_mode: true,
+        last_verified_at: null,
+      }),
+    });
+
+    expect(state.flow).toBe("checklist_review");
+    expect(state.checklist?.required_documents).toHaveLength(2);
+    expect(state.trustMetadata?.trust_state).toBe("official_review_required");
+  });
+
+  it("still blocks a non-fixture checklist that requires official review", () => {
+    const state = procedureCaseReducer(createInitialState("s1"), {
+      type: "CHECKLIST_RESPONSE_RECEIVED",
+      response: checklistResponse({
+        trust_state: "official_review_required",
+        fixture_mode: false,
+      }),
+    });
+
+    expect(state.flow).toBe("official_review_required");
+  });
+
   it("overrides regardless of current flow for intake responses", () => {
     const state = procedureCaseReducer(
       { ...createInitialState("s1"), flow: "clarifying" },

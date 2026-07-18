@@ -41,8 +41,6 @@ PROCEDURES_DB = {
     },
 }
 
-from __future__ import annotations
-
 def _rag_citations(procedure_id: str, top_k: int = 3) -> list[Citation]:
     evidence = RAGService.search_evidence(
         query=f"{PROCEDURES_DB[procedure_id]['name']} thanh phan ho so",

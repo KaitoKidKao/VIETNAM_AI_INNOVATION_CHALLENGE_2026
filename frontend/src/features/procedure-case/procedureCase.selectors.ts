@@ -71,6 +71,7 @@ export function selectCanConfirmU2(state: ProcedureCaseState): boolean {
 
 export function selectCanRunPrecheck(state: ProcedureCaseState): boolean {
   if (!state.checklist) return false;
+  if (state.checklist.trust_state !== "verified_guidance") return false;
   const required = state.checklist.form_schema.required ?? [];
   return required.every((key) => {
     const value = state.formDraft[key];

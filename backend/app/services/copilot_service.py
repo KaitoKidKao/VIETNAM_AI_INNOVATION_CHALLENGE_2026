@@ -132,9 +132,11 @@ class CopilotService:
             )
 
         verified = metadata.trust_state == TrustState.VERIFIED_GUIDANCE
+        demo_fixture = metadata.fixture_mode
+        content_available = verified or demo_fixture
         message = (
-            "Đây là checklist fixture để tích hợp API, không phải yêu cầu hồ sơ thật."
-            if metadata.fixture_mode
+            "Dữ liệu demo để kiểm thử checklist và biểu mẫu; không phải yêu cầu hồ sơ thật."
+            if demo_fixture
             else "Hãy review checklist, nguồn và ngày xác minh trước khi tiếp tục."
         )
         await self._audit_sink.emit(
@@ -145,11 +147,11 @@ class CopilotService:
             **metadata.model_dump(),
             procedure_id=pack.procedure_id,
             procedure_name=pack.name,
-            required_documents=pack.required_documents if verified else [],
-            optional_documents=pack.optional_documents if verified else [],
-            steps=pack.steps if verified else [],
-            form_schema=pack.form_schema if verified else {},
-            form_sections=pack.form_sections if verified else [],
+            required_documents=pack.required_documents if content_available else [],
+            optional_documents=pack.optional_documents if content_available else [],
+            steps=pack.steps if content_available else [],
+            form_schema=pack.form_schema if content_available else {},
+            form_sections=pack.form_sections if content_available else [],
             procedure_card=build_procedure_card(pack) if verified else None,
             journey=build_journey(pack, context),
             next_action=(

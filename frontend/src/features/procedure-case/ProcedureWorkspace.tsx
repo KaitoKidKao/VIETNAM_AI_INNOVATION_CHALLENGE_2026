@@ -275,7 +275,9 @@ export default function ProcedureWorkspace({
                 <div className="lg:col-span-7 space-y-6">
                   <div className="bg-card-bg border border-border-slate rounded-xl p-5 shadow-sm space-y-4">
                     <div className="border-b border-border-slate pb-3 mb-3 text-left">
-                      <span className="text-[8px] font-bold text-accent tracking-wider uppercase block">TỜ KHAI ĐIỆN TỬ SƠ BỘ</span>
+                      <span className="text-[8px] font-bold text-accent tracking-wider uppercase block">
+                        {state.checklist.fixture_mode ? "BIỂU MẪU DEMO" : "TỜ KHAI ĐIỆN TỬ SƠ BỘ"}
+                      </span>
                       <h3 className="text-sm font-bold text-primary">{state.checklist.procedure_name}</h3>
                     </div>
                     <DynamicFormRenderer

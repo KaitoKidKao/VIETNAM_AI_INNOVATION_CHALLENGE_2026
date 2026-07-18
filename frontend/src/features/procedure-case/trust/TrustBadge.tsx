@@ -25,9 +25,19 @@ interface TrustBadgeProps {
   fixtureMode?: boolean;
 }
 
+export function resolveDisplayedTrustState(
+  trustState: TrustState,
+  fixtureMode?: boolean,
+): TrustState {
+  if (fixtureMode && trustState === "verified_guidance") {
+    return "official_review_required";
+  }
+  return trustState;
+}
+
 export default function TrustBadge({ trustState, fixtureMode }: TrustBadgeProps) {
   if (!trustState) return null;
-  const variant = VARIANTS[trustState];
+  const variant = VARIANTS[resolveDisplayedTrustState(trustState, fixtureMode)];
 
   return (
     <div className="inline-flex items-center gap-1.5 flex-wrap">

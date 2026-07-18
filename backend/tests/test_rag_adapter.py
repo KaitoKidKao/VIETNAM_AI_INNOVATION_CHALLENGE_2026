@@ -135,7 +135,9 @@ def test_checklist_endpoint_requires_official_review_for_candidate_sources(
     assert body["trust_state"] == "official_review_required"
     assert body["fixture_mode"] is False
     assert body["source_refs"]
-    assert body["required_documents"]
+    assert body["required_documents"] == []
+    assert body["optional_documents"] == []
+    assert body["form_schema"] == {}
 
 
 @requires_source_data

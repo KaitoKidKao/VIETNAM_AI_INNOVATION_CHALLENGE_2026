@@ -39,6 +39,12 @@ export default function PrecheckPanel({
         </button>
       </div>
 
+      {trustMetadata?.fixture_mode && (
+        <p className="text-xs font-medium leading-relaxed text-foreground/60">
+          Biểu mẫu demo chưa tạo kết luận tiền kiểm. Hồ sơ thật cần dữ liệu đã được cơ quan có thẩm quyền duyệt.
+        </p>
+      )}
+
       {flow === "needs_fix" && lastValidationResponse && (
         <div className="space-y-2.5">
           <p className="text-[10px] font-semibold text-foreground/60">{lastValidationResponse.summary_message}</p>

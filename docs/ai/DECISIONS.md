@@ -349,6 +349,37 @@ Không có migration, cloud state, secret hoặc API contract cần thu hồi.
 
 ---
 
+## D-016 — Hiển thị checklist fixture trong demo nhưng không cấp verified guidance
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** User và Codex
+- **Phạm vi:** API | demo | UI
+- **Task Record:** `local-20260718-safe-demo-checklist`
+- **Peer xác nhận:** User chọn Option 1: hiển thị checklist/form mẫu, giữ cảnh báo và không xác minh nguồn
+
+### Bối cảnh
+
+D-013 buộc pack chưa qua K1 trả `official_review_required`; implementation hiện tại đồng thời xóa checklist/form và frontend chuyển thẳng sang màn hình chặn. Điều này an toàn nhưng làm luồng demo U2/U3 không thể thao tác dù fixture đã được gắn `fixture_mode=true` và nội dung chỉ là dữ liệu kiểm thử.
+
+### Quyết định
+
+Cho phép response checklist mang `fixture_mode=true` chứa checklist, steps và form schema của fixture để kiểm thử luồng giao diện. Response vẫn phải là `official_review_required`, `last_verified_at=null`, không được hiển thị badge "Đã xác minh nguồn", không được tạo verdict tiền kiểm và phải ghi rõ dữ liệu mẫu không phải yêu cầu hồ sơ thật. Pack RAG/disabled chưa approved không được hưởng ngoại lệ này.
+
+Không thêm endpoint hoặc đổi request schema. Frontend dùng tổ hợp `fixture_mode=true` và `official_review_required` để render checklist/form demo; mọi response official-review khác vẫn chặn như D-013.
+
+### Hệ quả và kiểm chứng
+
+- Demo có thể đi qua checklist/form của ba fixture pack mà không giả mạo K1.
+- Test backend phải chứng minh fixture có nội dung nhưng trust vẫn official-review; candidate RAG vẫn không phát nội dung.
+- Test frontend phải chứng minh fixture official-review vào `checklist_review`, còn non-fixture official-review vẫn vào màn hình chặn.
+
+### Rollback / fallback
+
+Revert task commit để quay lại hành vi strip toàn bộ fixture content. Không có migration, data release hoặc secret cần thu hồi.
+
+---
+
 ## Mẫu quyết định mới
 
 - **Trạng thái:** Accepted

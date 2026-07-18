@@ -266,8 +266,15 @@ export function procedureCaseReducer(
         review_gate: response.review_gate,
         fixture_mode: response.fixture_mode,
       };
+      const canRenderDemoChecklist =
+        response.fixture_mode &&
+        (response.required_documents.length > 0 ||
+          response.optional_documents.length > 0 ||
+          Object.keys(response.form_schema.properties ?? {}).length > 0);
       const flow: FlowState =
-        response.trust_state === "official_review_required" ? "official_review_required" : "checklist_review";
+        response.trust_state === "official_review_required" && !canRenderDemoChecklist
+          ? "official_review_required"
+          : "checklist_review";
       return {
         ...state,
         isBusy: false,
