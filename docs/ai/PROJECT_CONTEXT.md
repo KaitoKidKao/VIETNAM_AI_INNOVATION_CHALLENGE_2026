@@ -66,6 +66,10 @@ Kết quả quy phạm chỉ có ba trust state:
   provenance/checksum report, human-review checklist và validator fail-closed cho
   đúng ba source canonical. Gói thật hiện vẫn `needs_review`; chưa có manifest
   human-approved hoặc runtime release.
+- Task `local-20260718-procedure-family-registry` bổ sung registry versioned cho
+  25 source/26 quan hệ, gồm chín source `2.*` đọc trực tiếp từ ignored
+  `dataset_raw`. Family package chỉ là candidate `needs_review`; router/retrieval
+  runtime vẫn giữ exact ba anchor của D-013.
 
 ### Tiêu chí thành công đề xuất
 
@@ -100,7 +104,7 @@ Kết quả quy phạm chỉ có ba trust state:
 | Frontend web | Next.js scaffold trong `frontend/`; UI product/widget chưa hoàn tất | D-005 Accepted; D-008 Accepted |
 | Backend/API | FastAPI integration foundation trong `backend/`; sáu routes, typed trust/error metadata, deterministic rules và dev fixture có sẵn; adapter RAG/LLM/PII Guard đã cắm vào port qua `procedure_data_mode=rag` | D-005 Accepted; D-006 Proposed; D-011 Proposed |
 | AI/model/provider | LLM Gateway OpenAI-compatible (`llm_mode=gateway`), đọc `AI_*` và fallback alias `OPENAI_*`; fallback deterministic khi thiếu key; provider thật vẫn chưa có smoke evidence trong task này | D-006 Proposed; D-011 Proposed; D-013 Accepted |
-| Data/RAG | RAG in-process chỉ nạp ba source canonical thành candidate `needs_review`; tooling K1 review-ready đã có nhưng chưa có human-approved release. Không có `last_verified_at` và không được cấp `verified_guidance` trước K1. Legacy clean-RAG bị khóa mặc định bằng `LEGACY_RAG_ENABLED=false` | D-006 Proposed; D-011 Proposed; D-013 Accepted |
+| Data/RAG | Runtime vẫn chỉ nạp ba anchor canonical thành candidate `needs_review`. Registry review-time có 25 source/26 quan hệ và dual-source discovery `Data_DVC` + local ignored `dataset_raw`, nhưng chưa nối router/retrieval và chưa có human-approved release. Không có `last_verified_at` hoặc `verified_guidance` trước K1; legacy clean-RAG mặc định tắt | D-006 Proposed; D-011 Proposed; D-013 Accepted |
 | Deploy/demo runtime | Chưa provision URL, hosting, secret hoặc CD | D-006 Proposed |
 | Application checks | Lệnh bootstrap có sẵn; lint/test/build ứng dụng cần được xác minh theo Task Record | D-005 / task follow-up |
 

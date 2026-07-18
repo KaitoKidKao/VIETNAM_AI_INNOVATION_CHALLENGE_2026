@@ -4,6 +4,10 @@ Tài liệu này hướng dẫn tạo và kiểm tra gói review cho đúng ba t
 Tooling chỉ kiểm tính toàn vẹn và độ đầy đủ của metadata; không thay thế người
 review nội dung nghiệp vụ/pháp lý.
 
+Gói anchor trong tài liệu này vẫn chỉ có ba source canonical. Với registry 25
+source/26 quan hệ và dual-source discovery từ `dataset_raw`, xem
+[`PROCEDURE_FAMILY_REGISTRY.md`](PROCEDURE_FAMILY_REGISTRY.md).
+
 ## Phạm vi canonical
 
 | Procedure ID | Mã nguồn bắt buộc | Tên thủ tục |
