@@ -7,6 +7,7 @@ from .chunking import (
     build_evidence_chunks,
     build_report,
 )
+from .approved import build_approved_pack
 from .normalization import NormalizedDocument, normalize_document
 from .parsing import ParsedSection, parse_sections
 from .retrieval import (
@@ -41,6 +42,7 @@ __all__ = [
     "SourceDocument",
     "SourceDocumentRegistry",
     "SourceValidationIssue",
+    "build_approved_pack",
     "build_evidence_chunks",
     "build_report",
     "evaluate_recall_at_k",

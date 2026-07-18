@@ -43,9 +43,12 @@ class ChunkingFixtureTests(unittest.TestCase):
             dict(counts),
         )
 
-    def test_annotations_are_seeded_for_review_and_do_not_embed_raw_text(self) -> None:
+    def test_annotations_use_review_lifecycle_and_do_not_embed_raw_text(self) -> None:
         self.assertTrue(
-            all(row["annotation_status"] == "needs_review" for row in self.rows)
+            all(
+                row["annotation_status"] in validator.ALLOWED_ANNOTATION_STATUSES
+                for row in self.rows
+            )
         )
         self.assertFalse(self.metadata["selection"]["raw_content_committed"])
         expected_columns = set(validator.REQUIRED_COLUMNS)
