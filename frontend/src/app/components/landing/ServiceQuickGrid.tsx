@@ -16,15 +16,15 @@ export default function ServiceQuickGrid({ onGoCopilot, onComingSoon }: ServiceQ
   ];
 
   return (
-    <section className="px-6 md:px-12 -mt-8 relative z-20 shrink-0">
-      <div className="max-w-6xl mx-auto bg-white border border-border-slate rounded-2xl shadow-md p-6 md:p-8 grid grid-cols-2 md:grid-cols-6 gap-6 text-center">
+    <section className="-mt-[18px] relative z-20 shrink-0">
+      <div className="portal-container bg-[#fffdf9] border border-border-slate rounded-2xl shadow-xl p-6 md:p-8 grid grid-cols-2 md:grid-cols-6 gap-6 md:gap-0 md:divide-x md:divide-border-slate/60 text-center">
         {items.map(({ icon: Icon, label, onClick }) => (
           <button
             key={label}
             onClick={onClick}
-            className="flex flex-col items-center justify-center p-3 rounded-xl hover:bg-gov-cream hover-lift transition-all group"
+            className="flex flex-col items-center justify-center p-3 rounded-xl hover:bg-gov-cream transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gov-red/40"
           >
-            <div className="w-12 h-12 rounded-full bg-gov-cream text-gov-red flex items-center justify-center mb-3 shadow-inner group-hover:scale-110 transition-transform">
+            <div className="w-[52px] h-[52px] rounded-full bg-[#fff2dc] text-gov-red flex items-center justify-center mb-3 shadow-inner group-hover:scale-110 transition-transform">
               <Icon className="w-6 h-6" />
             </div>
             <span className="text-[11px] font-bold text-foreground/80 leading-snug">{label}</span>

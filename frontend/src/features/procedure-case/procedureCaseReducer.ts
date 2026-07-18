@@ -42,6 +42,7 @@ export type ProcedureCaseAction =
 export function createInitialState(sessionId: string): ProcedureCaseState {
   return {
     flow: "idle",
+    lastStableFlow: "idle",
     availability: initialAvailability(),
     sessionId,
     sessionContext: emptySessionContext(),
@@ -84,7 +85,21 @@ function initFormDraft(response: ChecklistResponse): Record<string, FormFieldVal
   return draft;
 }
 
+const OVERLAY_FLOWS: FlowState[] = ["degraded", "official_review_required"];
+
 export function procedureCaseReducer(
+  state: ProcedureCaseState,
+  action: ProcedureCaseAction,
+): ProcedureCaseState {
+  const next = applyAction(state, action);
+  if (next.flow === state.flow && next.lastStableFlow === state.lastStableFlow) return next;
+  return {
+    ...next,
+    lastStableFlow: OVERLAY_FLOWS.includes(next.flow) ? next.lastStableFlow : next.flow,
+  };
+}
+
+function applyAction(
   state: ProcedureCaseState,
   action: ProcedureCaseAction,
 ): ProcedureCaseState {
@@ -100,7 +115,10 @@ export function procedureCaseReducer(
       return {
         ...state,
         availability: { ...state.availability, backendReachable, degradeReason },
-        flow: stillDegraded ? "degraded" : state.flow === "degraded" ? "idle" : state.flow,
+        // On reconnect, resume the stage the user was actually at
+        // (lastStableFlow) rather than snapping back to idle — reconnecting
+        // must not discard a checklist/form the user already has open.
+        flow: stillDegraded ? "degraded" : state.flow === "degraded" ? state.lastStableFlow : state.flow,
       };
     }
 
@@ -392,6 +410,7 @@ export function procedureCaseReducer(
         formDraft: persisted.formDraft,
         lastValidationResponse: persisted.lastValidationResponse,
         flow: persisted.flow,
+        lastStableFlow: persisted.lastStableFlow ?? persisted.flow,
       };
     }
 
