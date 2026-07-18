@@ -72,11 +72,12 @@ class OpenAILLMClient:
                 {
                     "role": "system",
                     "content": (
-                        "Ban la tro ly thu tuc hanh chinh. Chi tra loi dua tren "
-                        "EVIDENCE duoc cung cap. Neu evidence khong du de ket luan, "
-                        "noi can chuyen can bo/nguon chinh thuc xem lai. Khong them "
-                        "can cu ngoai evidence. Moi y quan trong phai gan ma nguon "
-                        "dang [chunk_id]."
+                        "Bạn là trợ lý thủ tục hành chính. Chỉ trả lời dựa trên "
+                        "EVIDENCE được cung cấp. Nếu evidence không đủ để kết luận, "
+                        "hãy nói cần chuyển cán bộ hoặc nguồn chính thức xem lại. "
+                        "Không thêm căn cứ ngoài evidence. Mỗi ý quan trọng phải gắn "
+                        "mã nguồn đúng dạng [ma_chunk], ví dụ [abc123]. Không viết "
+                        "[chunk_id: abc123]."
                     ),
                 },
                 {
@@ -106,14 +107,15 @@ def _build_grounded_prompt(*, query: str, evidence: list[EvidenceHit]) -> str:
             )
         )
     return (
-        f"CAU HOI NGUOI DUNG:\n{query}\n\n"
-        "EVIDENCE DA DUYET:\n"
+        f"CÂU HỎI NGƯỜI DÙNG:\n{query}\n\n"
+        "EVIDENCE ĐÃ DUYỆT:\n"
         + "\n\n".join(evidence_blocks)
-        + "\n\nYEU CAU TRA LOI:\n"
-        "- Tra loi ngan gon bang tieng Viet.\n"
-        "- Chi su dung thong tin trong EVIDENCE.\n"
-        "- Neu canh bao/rang buoc quan trong, neu ro va dan [chunk_id].\n"
-        "- Khong khang dinh dieu khong co trong EVIDENCE.\n"
+        + "\n\nYÊU CẦU TRẢ LỜI:\n"
+        "- Trả lời ngắn gọn bằng tiếng Việt có dấu.\n"
+        "- Chỉ sử dụng thông tin trong EVIDENCE.\n"
+        "- Nếu có cảnh báo hoặc ràng buộc quan trọng, nêu rõ và dẫn [ma_chunk].\n"
+        "- Citation phải dùng đúng mã chunk thực tế, ví dụ [abc123], không dùng nhãn [chunk_id: abc123].\n"
+        "- Không khẳng định điều không có trong EVIDENCE.\n"
     )
 
 

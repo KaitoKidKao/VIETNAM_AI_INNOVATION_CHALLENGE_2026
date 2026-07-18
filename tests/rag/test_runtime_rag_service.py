@@ -16,11 +16,13 @@ sys.path.insert(0, str(BACKEND_ROOT))
 from app.rag.chunking import ChunkSourceMetadata, build_evidence_chunks
 from app.rag.normalization import normalize_document
 from app.rag.parsing import parse_sections
+from app.models.rag import EvidenceHit
 from app.routers.rag import search_evidence_get
 from app.services.llm_service import (
     GroundedRAGAnswerService,
     LLMResult,
     OpenAILLMClient,
+    _build_grounded_prompt,
 )
 from app.services import rag_service
 from app.services.procedure_service import ProcedureService
@@ -125,6 +127,27 @@ class RuntimeRAGServiceTests(unittest.TestCase):
         self.assertEqual("gpt-4o-mini", response.model)
         self.assertIn(chunk.chunk_id, response.citations)
         self.assertIn(chunk.chunk_id, response.answer)
+
+    def test_grounded_prompt_uses_accented_vietnamese_and_exact_citation_rule(
+        self,
+    ) -> None:
+        chunk = _sample_chunk()
+        hit = EvidenceHit(
+            chunk_id=chunk.chunk_id,
+            source_id=chunk.source_id,
+            procedure_ids=list(chunk.procedure_ids),
+            chunk_type=chunk.chunk_type,
+            text=chunk.text,
+            context_prefix=chunk.context_prefix,
+            score=1.0,
+            source_refs=list(chunk.source_refs),
+            legal_basis_refs=list(chunk.legal_basis_refs),
+        )
+        prompt = _build_grounded_prompt(query="can giay to gi", evidence=[hit])
+
+        self.assertIn("CÂU HỎI NGƯỜI DÙNG", prompt)
+        self.assertIn("Trả lời ngắn gọn bằng tiếng Việt có dấu.", prompt)
+        self.assertIn("không dùng nhãn [chunk_id: abc123]", prompt)
 
     def test_grounded_answer_fails_closed_without_evidence(self) -> None:
         original = rag_service._cached_chunks

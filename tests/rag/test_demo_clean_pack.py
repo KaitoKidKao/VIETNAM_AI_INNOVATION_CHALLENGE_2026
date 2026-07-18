@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -35,6 +36,11 @@ class DemoCleanPackTests(unittest.TestCase):
             self.assertTrue((root / "chunks.jsonl").is_file())
             self.assertTrue((root / "report.json").is_file())
             self.assertGreater((root / "chunks.jsonl").stat().st_size, 0)
+            first_chunk = json.loads(
+                (root / "chunks.jsonl").read_text(encoding="utf-8").splitlines()[0]
+            )
+            self.assertIn("Chi tiết thủ tục hành chính", first_chunk["text"])
+            self.assertNotIn("Chi tiáº¿t", first_chunk["text"])
 
 
 if __name__ == "__main__":
