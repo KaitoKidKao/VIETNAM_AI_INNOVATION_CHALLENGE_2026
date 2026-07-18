@@ -256,12 +256,16 @@ Runtime phải có `APP_ENV=production`, `PROCEDURE_DATA_MODE=disabled`, `RAG_MO
 
 - D-012 không thay thế D-006. Cả hai đã được peer xác nhận; billing/credit, IAM, local/container smoke và candidate smoke vẫn là gate chặn provisioning hoặc traffic.
 - Build từ `backend/`, container chạy non-root và lắng nghe `PORT`; local lint/test/container smoke là gate.
-- Với service đã có stable revision, deploy candidate `--no-traffic`, smoke `/health`, `/openapi.json`, `/docs` và fail-closed contract trước khi chuyển 100% traffic. Cloud Run không hỗ trợ `--no-traffic` khi tạo service đầu tiên: bootstrap revision phải private/authenticated-only, smoke bằng identity token, rồi mới mở public access.
+- Với service đã có stable revision, deploy candidate `--no-traffic`, smoke `/health`, `/openapi.json`, `/docs` và fail-closed contract trước khi chuyển 100% traffic. Cloud Run không hỗ trợ `--no-traffic` khi tạo service đầu tiên: sau local/container guard, bootstrap production-disabled dùng direct public smoke ngay sau deploy; không có procedure data, RAG, LLM, database hoặc secret để lộ.
 - Ghi image digest, revision, URL, timestamp, smoke result và rollback revision vào handoff; tạo budget alert 10/25/50/80/100% của 1,000,000 VND sau billing review.
 
 ### Rollback / fallback
 
-Nếu candidate smoke hoặc 5xx lỗi, không chuyển traffic; deploy sau rollback traffic về revision stable trước. Nếu bootstrap smoke lần đầu lỗi, không mở public access và dùng backend local làm fallback. Nếu billing/credit, IAM hoặc smoke không đạt, dừng ở artifact/runbook local.
+Nếu candidate smoke hoặc 5xx lỗi, không chuyển traffic; deploy sau rollback traffic về revision stable trước. Nếu bootstrap smoke lần đầu lỗi, gỡ public Invoker hoặc xóa service theo owner quyết định và dùng backend local làm fallback. Nếu billing/credit, IAM hoặc smoke không đạt, dừng ở artifact/runbook local.
+
+### Live deployment evidence
+
+Ngày 2026-07-18, Cloud Build `8ef35d72-ee00-4b7b-8f21-d8791d7b4bba` build image backend source commit `b49ca1d31dc5c773a934d003353bc58a72355c08` thành digest `sha256:83d9170307385b8bf34247b2d5484c47aa8bf69e666a7661acba68a08ddf74b8`. Revision `vngov-api-00001-def` đang public tại `https://vngov-api-j53prjslqa-as.a.run.app`; public smoke pass với runtime production-disabled, six-route OpenAPI, fail-closed contract và rate-limit reset. Không có database, Secret Manager, Cloud Storage application, VPC/NAT, RAG, LLM hay procedure data runtime được tạo/bật trong D-012.
 
 ---
 

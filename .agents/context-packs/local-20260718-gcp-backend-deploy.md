@@ -6,7 +6,7 @@
 
 - Task ID: `local-20260718-gcp-backend-deploy` | GitHub Issue: chưa tạo
 - Owner tạm thời: `hdtruong802`
-- Mode hiện tại: `implement`; provisioning chờ billing/IAM/candidate-smoke gate
+- Mode cuối: `verify-demo`; Cloud Run production-disabled đã public-smoke pass
 - Base ref / commit: `origin/dev` / `32ea0cdfec793b4a0eef5345ba7539806ec292a9`
 - Branch / worktree: `chore/local-20260718-gcp-backend-deploy` / `.worktrees/gcp-backend-deploy`
 - AI Log member / tool binding / readiness: `hdtruong802 / codex manual / doctor --strict pass`
@@ -39,10 +39,10 @@
 
 ## Dependencies và resource claim
 
-- Depends on / blocked by: billing/credit verification; IAM tối thiểu; local test/lint/container smoke; candidate smoke.
+- Depends on / blocked by: đã hoàn tất billing/credit, IAM tối thiểu, local/container smoke và public smoke của revision đầu tiên.
 - Shared resource: deployment contract và backend runtime image.
 - Claim owner + thời hạn: `hdtruong802`, chỉ trong Task Record này; release khi handoff review hoàn tất.
-- Cách thông báo peer và điều kiện release: peer `hdtruong802` đã xác nhận D-006/D-012; ghi revision/image digest/URL/rollback target vào handoff chỉ sau smoke candidate pass.
+- Cách thông báo peer và điều kiện release: peer `hdtruong802` đã xác nhận D-006/D-012; revision đầu tiên dùng public smoke vì Cloud Run không hỗ trợ `--no-traffic` khi tạo service. Revision sau phải dùng candidate `--no-traffic` trước traffic switch.
 
 ## Kiểm chứng và handoff
 
@@ -56,8 +56,12 @@
   - Production-disabled smoke: health `degraded`, 6 OpenAPI routes, catalog `unavailable`, intake không nhận diện fixture, checklist/validation `official_review_required`, error envelope có `X-Request-ID`, rate limit `429`; test thêm `PORT=18081` pass.
   - Runtime image không có `.env`, `tests/`, `main.py`, `AI_API_KEY`, `AI_PROVIDER` hoặc `DATABASE_URL` trong config environment.
   - `python scripts/ci/validate_repo.py`: pass; `backend/.venv/Scripts/python.exe -m pytest -q tests/ci`: `17 passed`.
-  - Không có cloud provision, billing check hay public URL.
-- AI-Log ID + capture status: chưa có commit evidence; manual binding sẵn sàng.
+  - Cloud preflight pass: project `ringed-choir-424101-t4`, region `asia-southeast1`, billing enabled; deployer là Project Owner và Billing Admin.
+  - Budget alert đã tạo: `billingAccounts/0152AE-B51BC4-DCC04A/budgets/0ebd8f24-0de2-40b7-85ec-3977cb0a1269`, 1,000,000 VND/tháng, scoped vào project, ngưỡng 10/25/50/80/100%.
+  - Artifact Registry `vngov-backend` cùng region, Docker immutable tags; runtime account `vngov-api-runtime` không có role/secret. Cloud Build `8ef35d72-ee00-4b7b-8f21-d8791d7b4bba` build source backend từ commit `b49ca1d31dc5c773a934d003353bc58a72355c08` thành image digest `sha256:83d9170307385b8bf34247b2d5484c47aa8bf69e666a7661acba68a08ddf74b8`.
+  - Cloud Run service `vngov-api`, revision `vngov-api-00001-def`, public URL `https://vngov-api-j53prjslqa-as.a.run.app`. Runtime là 1 vCPU/512 MiB, request-based, min 0/max 1, timeout 20 giây; `APP_ENV=production`, procedure data/RAG/LLM đều `disabled`, CORS rỗng, không có database, Secret Manager, storage, VPC/NAT hay AI provider.
+  - Public smoke pass: `/health` production/degraded với ba capability disabled; `/openapi.json` đúng 6 route; `/docs` 200; catalog gồm 3 summary `unavailable` không fixture; recommend/intake/checklist/validation fail-closed; error envelope có `X-Request-ID`; rate limit trả 429 và reset sau window.
+- AI-Log ID + capture status: `log-d98438a57f24450daaabfc68` (manual prompt deploy) và `log-120748f2fc394362b05479b9` (no-new-prompt warning) cho hai commit artifact/runbook ban đầu.
 - Files, API và resources đã chạm: Docker/ignore files, backend contract test, D-012, deployment contract, Cloud Run runbook và Context Pack; không đổi API/schema.
-- Claims đã release: local container/port đã dừng; không có cloud resource claim. Shared deploy contract chờ peer review.
-- Việc tiếp theo hoặc peer có thể tiếp nhận: review D-012/D-006; chỉ sau đó mới làm billing preflight và provisioning theo runbook.
+- Claims đã release: local container/port đã dừng; service, Artifact Registry và budget là state Cloud đã bàn giao, không phải resource claim độc quyền. Không còn smoke identity tạm.
+- Việc tiếp theo hoặc peer có thể tiếp nhận: frontend chỉ được thêm origin cụ thể vào `CORS_ALLOWED_ORIGINS` sau Task Record/peer confirmation; data/RAG/LLM vẫn fail-closed cho đến khi có release evidence. Deploy sau dùng candidate `--no-traffic` và rollback về revision stable này.
