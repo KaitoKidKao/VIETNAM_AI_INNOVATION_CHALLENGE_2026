@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from app.models.rag import EvidenceSearchRequest, EvidenceSearchResponse
 from app.services.rag_service import RAGService
@@ -13,4 +13,17 @@ def search_evidence(request: EvidenceSearchRequest):
         query=request.query,
         procedure_id=request.procedure_id,
         top_k=request.top_k,
+    )
+
+
+@router.get("/rag/search", response_model=EvidenceSearchResponse)
+def search_evidence_get(
+    query: str = Query(..., description="Vietnamese user query"),
+    procedure_id: str | None = Query(None, description="Procedure ID filter"),
+    top_k: int = Query(5, ge=1, le=10, description="Maximum evidence chunks"),
+):
+    return RAGService.search_evidence(
+        query=query,
+        procedure_id=procedure_id,
+        top_k=top_k,
     )

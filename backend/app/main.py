@@ -9,6 +9,18 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
+@app.get("/")
+def root():
+    return {
+        "service": "AI Procedure Copilot API",
+        "status": "ok",
+        "docs": "/docs",
+        "health": "/health",
+        "rag_search_get": "/v1/rag/search?query=giay%20chung%20sinh&procedure_id=dang-ky-khai-sinh&top_k=3",
+        "rag_search_post": "/v1/rag/search",
+    }
+
 # Configure CORS for frontend integration
 app.add_middleware(
     CORSMiddleware,

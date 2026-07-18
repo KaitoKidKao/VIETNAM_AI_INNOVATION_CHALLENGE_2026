@@ -16,6 +16,7 @@ sys.path.insert(0, str(BACKEND_ROOT))
 from app.rag.chunking import ChunkSourceMetadata, build_evidence_chunks
 from app.rag.normalization import normalize_document
 from app.rag.parsing import parse_sections
+from app.routers.rag import search_evidence_get
 from app.services import rag_service
 from app.services.procedure_service import ProcedureService
 
@@ -64,6 +65,22 @@ class RuntimeRAGServiceTests(unittest.TestCase):
 
         self.assertEqual("ok", result.status)
         self.assertEqual("runtime-source", result.hits[0].source_id)
+
+    def test_get_route_helper_supports_browser_smoke(self) -> None:
+        chunk = _sample_chunk()
+        original = rag_service._cached_chunks
+        try:
+            rag_service._cached_chunks = lambda: (chunk,)
+            result = search_evidence_get(
+                query="giay chung sinh",
+                procedure_id="dang-ky-khai-sinh",
+                top_k=1,
+            )
+        finally:
+            rag_service._cached_chunks = original
+
+        self.assertEqual("ok", result.status)
+        self.assertEqual(1, len(result.hits))
 
     def test_checklist_includes_rag_source_when_available(self) -> None:
         chunk = _sample_chunk()
