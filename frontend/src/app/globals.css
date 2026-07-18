@@ -113,3 +113,29 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
 }
+
+/* Portal homepage (simulated Cổng DVCQG) scope — warm palette, kept
+   separate from the VNGov Copilot Navy & Orange tokens above. Only
+   applies inside .portal-home; never touches :root/@theme. */
+.portal-home {
+  --portal-page: #fffaf1;
+  --portal-surface: #fffdf9;
+  --portal-border: #eadfce;
+  --portal-text: #29231e;
+  --portal-muted: #82786f;
+  --portal-red: #aa281d;
+  --portal-red-dark: #7f2118;
+  --portal-orange: #e77b32;
+  --portal-gold: #e9a423;
+}
+
+.portal-container {
+  width: min(1420px, calc(100% - 64px));
+  margin-inline: auto;
+}
+
+@media (max-width: 640px) {
+  .portal-container {
+    width: calc(100% - 32px);
+  }
+}
