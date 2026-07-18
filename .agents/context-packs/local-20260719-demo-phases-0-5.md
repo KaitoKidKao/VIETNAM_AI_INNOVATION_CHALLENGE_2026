@@ -6,7 +6,7 @@
 - Owner tam thoi: Codex
 - Mode hien tai: `verify-demo`
 - Base ref / commit: `cao` / `5a91f099bffe4859433be7f93d52ff834fc37c17`
-- Branch / worktree: `feature/local-20260719-demo-phases-0-5` / dedicated local worktree
+- Branch / worktree: integrated into local `cao`; source worktree retained as a recovery point
 - AI Log: chua bat; khong capture prompt trong task nay
 
 ## Muc tieu va ranh gioi
@@ -59,6 +59,7 @@
   - Backend full regression: `64 passed`, mot Starlette deprecation warning tu dependency.
   - Frontend: `31 passed`; `tsc --noEmit` pass; ESLint `src/features/procedure-case` pass.
   - Full ESLint con mot loi co san ngoai scope tai `frontend/src/app/layout.tsx:43` (`no-sync-scripts`).
-  - Next production build trong worktree bi Turbopack chan do junction `node_modules` tro ra ngoai filesystem root; se chay lai trong clone chinh sau fast-forward.
-- Claims da release: release sau khi fast-forward local `cao`; khong co port/server/cloud resource.
+  - Next production build trong clone chinh: pass; static routes `/` va `/_not-found` generated.
+  - Build trong worktree tung bi Turbopack chan do junction `node_modules` tro ra ngoai filesystem root; day la gioi han cua setup worktree, khong phai loi source.
+- Claims da release: da release; khong co port/server/cloud resource.
 - Viec tiep theo: Phase 6+ chi sau handoff; deploy can user xac nhan rieng.
