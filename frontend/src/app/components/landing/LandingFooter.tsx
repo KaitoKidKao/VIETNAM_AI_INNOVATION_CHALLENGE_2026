@@ -77,6 +77,9 @@ export default function LandingFooter({ onComingSoon }: LandingFooterProps) {
       <p className="portal-container relative z-10 mt-3 text-center text-sm text-white/40">
         Môi trường mô phỏng phục vụ Vietnam AI Innovation Challenge 2026.
       </p>
+      <p className="portal-container relative z-10 mt-1 text-center text-xs text-white/35">
+        Thông tin liên lạc (số điện thoại, email, website) trên trang này là dữ liệu giả, chỉ phục vụ mục đích thử nghiệm sản phẩm.
+      </p>
     </footer>
   );
 }
