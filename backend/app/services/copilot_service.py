@@ -14,8 +14,6 @@ from app.models.intake import (
 )
 from app.models.procedure import ProcedureCandidate, ProcedurePack
 from app.models.validation import ValidationRequest, ValidationResponse
-from app.ports import AuditSink, ProcedureRepository, RecommendationProvider, RetrievalProvider
-from app.services.journey import build_confirmed_facts, build_journey, build_procedure_card
 from app.ports import (
     AuditSink,
     LLMProvider,
@@ -23,6 +21,7 @@ from app.ports import (
     RecommendationProvider,
     RetrievalProvider,
 )
+from app.services.journey import build_confirmed_facts, build_journey, build_procedure_card
 from app.services.rule_engine import RuleEngine
 from app.services.trust_policy import TrustPolicy
 
