@@ -27,7 +27,7 @@ from app.services.rag.pack_builder import (
 )
 from app.services.rag.retrieval import RetrievalService
 from app.services.rag.schemas import RetrievalQuery as RagRetrievalQuery
-from app.services.rag.source_store import PROCEDURE_DISPLAY_NAME
+from app.services.rag.source_store import PROCEDURE_DISPLAY_NAME, normalize_name
 
 _GENERIC_FORM_SCHEMA = {
     "type": "object",
@@ -51,6 +51,40 @@ _PACK_ALIASES: dict[str, list[str]] = {
         "thanh lap ho kinh doanh",
     ],
 }
+
+_OUT_OF_SCOPE_INTENTS = (
+    "dang ky ket hon",
+    "khai tu",
+    "dang ky khai tu",
+    "ho chieu",
+    "tam tru",
+    "cong ty co phan",
+    "cong ty trach nhiem huu han",
+)
+
+_PROCEDURE_INTENTS: dict[str, tuple[str, ...]] = {
+    "dang-ky-khai-sinh": ("khai sinh", "giay khai sinh", "dang ky sinh"),
+    "dang-ky-thuong-tru": ("thuong tru", "ho khau", "chuyen ho khau"),
+    "dang-ky-ho-kinh-doanh": (
+        "ho kinh doanh",
+        "thanh lap ho kinh doanh",
+        "mo cua hang",
+        "kinh doanh ca the",
+    ),
+}
+
+
+def _detect_procedure_intent(need_text: str) -> str | None:
+    normalized = normalize_name(need_text)
+    if any(phrase in normalized for phrase in _OUT_OF_SCOPE_INTENTS):
+        return None
+
+    matches = {
+        procedure_id
+        for procedure_id, phrases in _PROCEDURE_INTENTS.items()
+        if any(phrase in normalized for phrase in phrases)
+    }
+    return next(iter(matches)) if len(matches) == 1 else None
 
 
 def _build_pack(procedure_id: str) -> ProcedurePack | None:
@@ -113,10 +147,23 @@ class RagRecommendationProvider:
     async def recommend(
         self, need_text: str, session_context: SessionContext
     ) -> list[ProcedureCandidate]:
-        candidates = RetrievalService.recommend_procedure(need_text, top_k=1)
+        intended_procedure_id = _detect_procedure_intent(need_text)
+        if intended_procedure_id is None:
+            return []
+
+        candidates = RetrievalService.recommend_procedure(need_text, top_k=3)
         if not candidates:
             return []
-        top = candidates[0]
+        top = next(
+            (
+                candidate
+                for candidate in candidates
+                if candidate.procedure_id == intended_procedure_id
+            ),
+            None,
+        )
+        if top is None:
+            return []
         if top.score < get_settings().rag_min_confidence:
             return []
         return [
@@ -138,7 +185,7 @@ class RagRetrievalProvider:
         if not evidence.is_grounded:
             return RetrievalEvidence(
                 available=False,
-                reason="Không tìm thấy evidence đủ tin cậy trong nguồn thủ tục đã duyệt.",
+                reason="Không tìm thấy evidence đủ tin cậy trong nguồn thủ tục candidate.",
             )
         references = tuple(
             citation.get("ref_code") or citation.get("title", "")
@@ -173,9 +220,13 @@ class GatewayLLMProvider:
         try:
             for finding in findings:
                 field_id = finding.field_id or "thông tin đã nộp"
-                token_value = tokenized.get(finding.field_id) if finding.field_id else None
+                token_value = (
+                    tokenized.get(finding.field_id) if finding.field_id else None
+                )
                 tokenized_context = (
-                    f"{finding.field_id}={token_value}" if token_value is not None else ""
+                    f"{finding.field_id}={token_value}"
+                    if token_value is not None
+                    else ""
                 )
                 result = LLMGateway.explain_finding(
                     field_label=field_id,

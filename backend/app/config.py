@@ -7,14 +7,10 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BACKEND_ROOT = Path(__file__).resolve().parent.parent
-REPO_ROOT = BACKEND_ROOT.parent
-DEFAULT_RAG_SOURCE_DIR = str(REPO_ROOT / "data" / "Data_DVC")
-
-
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY_ROOT = BACKEND_ROOT.parent
 ENV_FILES = (REPOSITORY_ROOT / ".env", BACKEND_ROOT / ".env")
+DEFAULT_RAG_SOURCE_DIR = str(REPOSITORY_ROOT / "data" / "Data_DVC")
 
 
 class Settings(BaseSettings):
@@ -32,6 +28,7 @@ class Settings(BaseSettings):
     procedure_data_mode: Literal["fixture", "disabled", "external", "rag"] = "fixture"
     rag_mode: Literal["disabled", "external", "rag"] = "disabled"
     llm_mode: Literal["disabled", "external", "gateway"] = "disabled"
+    legacy_rag_enabled: bool = False
     rate_limit_enabled: bool = False
     rate_limit_requests: int = Field(default=60, ge=1, le=10_000)
     rate_limit_window_seconds: int = Field(default=60, ge=1, le=3_600)
@@ -58,7 +55,7 @@ class Settings(BaseSettings):
     # --- Guardrail / PII Guard (session-scoped, in-memory, xem D-006) ---
     pii_token_ttl_seconds: int = Field(default=1_800, ge=1)
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=ENV_FILES, extra="ignore")
 
     @property
     def allowed_origins(self) -> list[str]:
@@ -71,6 +68,24 @@ class Settings(BaseSettings):
     @property
     def rag_source_path(self) -> Path:
         return Path(self.rag_source_dir)
+
+    @property
+    def effective_ai_api_key(self) -> str:
+        return self.ai_api_key or self.openai_api_key
+
+    @property
+    def effective_ai_model(self) -> str:
+        return self.ai_model if self.ai_api_key else self.openai_model
+
+    @property
+    def effective_ai_base_url(self) -> str | None:
+        return self.ai_base_url or self.openai_base_url or None
+
+    @property
+    def effective_ai_timeout_seconds(self) -> float:
+        return (
+            self.ai_timeout_seconds if self.ai_api_key else self.openai_timeout_seconds
+        )
 
 
 @lru_cache
