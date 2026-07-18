@@ -29,9 +29,16 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-013 | Accepted | Production hardening local, fail closed trước K1 | `local-20260718-production-hardening-p0` | 2026-07-18 |
 | D-014 | Accepted | Synthetic approved family release cho demo local | `local-20260718-demo-family-release` | 2026-07-18 |
 | D-015 | Accepted | Ngoại lệ bảng màu đỏ-vàng cho landing page marketing, tách biệt VNGov Copilot Navy & Orange | `local-20260718-landing-page-red-gold` | 2026-07-18 |
+<<<<<<< HEAD
+| D-016 | Accepted | Tích hợp direct web-to-API, giữ production fail-closed trước K1 | `local-20260718-main-ci-api-integration` | 2026-07-18 |
+| D-017 | Accepted | Structure-aware chunking contract cho ba procedure pack MVP | `local-20260718-chunking-phase-0`, `local-20260718-chunking-phase-1` | 2026-07-18 |
+| D-018 | Accepted | Prototype read models cho sáu route base và hai route RAG additive | `local-20260718-prototype-api-contract` | 2026-07-18 |
+| D-019 | Accepted | Demo K1 simulation toggle + form schema cụ thể cho thường trú/hộ kinh doanh | `local-20260718-rag-llm-guardrail` | 2026-07-18 |
+=======
 | D-016 | Accepted | Direct web-to-API integration, production fail-closed before K1 | `local-20260718-main-ci-api-integration` | 2026-07-18 |
 | D-017 | Cancelled, superseded by D-018 | Account-based demo login proposal; not implemented | `local-20260718-seeded-auth` | 2026-07-18 |
 | D-018 | Accepted | One-click client-side demo gate, no account or backend auth | `local-20260718-seeded-auth` | 2026-07-18 |
+>>>>>>> 168b1bec091489c8a79a65f8d1216f8fe6629ce7
 
 ---
 
@@ -503,6 +510,41 @@ Không thêm route, auth, upload/OCR, support ticket, portal integration, databa
 ### Rollback / fallback
 
 Các trường response mới là optional/additive nên FE có thể bỏ qua. Nếu adapter/pack không sẵn sàng, response dùng `official_review_required` hoặc `need_more_information`, không fallback sang fact fixture.
+
+---
+
+## D-019 — Demo K1 simulation toggle + form schema cụ thể cho thường trú/hộ kinh doanh
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** User theo Task Record hiện tại
+- **Phạm vi:** API | data | demo | trust policy
+- **Task Record:** `local-20260718-rag-llm-guardrail`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** User chọn phương án config flag mặc định `False`, version pack đổi rõ thành `demo-k1-simulated-...` khi bật, và yêu cầu ghi Decision Log trước khi implement (xác nhận qua AskQuestion trong phiên làm việc).
+
+### Bối cảnh
+
+D-013 đã khoá đúng hành vi fail-closed: nguồn RAG (`recommend`/`checklist`/`validate`) luôn ở `needs_review`/`official_review_required` trước khi có K1 review người thật, và rollback note của D-013 nêu rõ quay lại auto-approved "không phải fallback demo được khuyến nghị". Tuy nhiên, để demo hiển thị được full flow (form/steps/findings/explanations) trên **data RAG thật** thay vì chỉ trên fixture giả lập, cần một cách xem trước có kiểm soát mà không sửa default production — tương tự tinh thần D-014 (synthetic approved family release) nhưng áp cho stack `app/services/rag/*` (`recommend`/`checklist`/`validate`) thay vì stack legacy Q&A.
+
+Đồng thời, `form_schema` của "đăng ký thường trú" và "đăng ký hộ kinh doanh" đang dùng chung `_GENERIC_FORM_SCHEMA` (2 field: họ tên, số điện thoại) — quá sơ sài để rule engine tạo được finding có ý nghĩa, khác biệt với "đăng ký khai sinh" đã có `_BIRTH_FORM_SCHEMA` riêng.
+
+### Quyết định
+
+1. Thêm `Settings.rag_demo_k1_approved: bool = False` (env `RAG_DEMO_K1_APPROVED`). Mặc định `False` giữ đúng D-013 (100% không đổi hành vi hiện có, test cũ không cần sửa). Khi bật `True` (chỉ dành cho máy demo cục bộ, **không được bật trên production/public deploy**), `pack_builder._demo_k1_status()` trả `review_status=approved`, `last_verified_at=<rag_source_freeze_date>` và đổi `version` thành `demo-k1-simulated-...`/`demo-k1-simulated-curated-...` để không thể nhầm với K1 người thật đã duyệt.
+2. Viết `_RESIDENCE_FORM_SCHEMA` và `_BUSINESS_HOUSEHOLD_FORM_SCHEMA` riêng trong `app/adapters/rag_llm.py`, xấp xỉ theo tên mẫu chính thức được dẫn ngay trong nguồn RAG (mẫu CT01 cho thường trú, Giấy đề nghị đăng ký hộ kinh doanh cho hộ kinh doanh) — nội dung mẫu đầy đủ chưa có trong `data/Data_DVC`, nên field list là ước lượng hợp lý theo cấu trúc phổ biến, **chưa được procedure-research lane xác minh từng field/label với bản mẫu chính thức**. Pack vẫn ở `needs_review` khi flag demo tắt.
+3. Mở rộng `pack_builder._required_field_rules()` để tự sinh thêm `STRING_PATTERN` (khi field có `pattern`) và `DATE_FORMAT` (khi field có `format: date`) từ JSON Schema, không chỉ `REQUIRED` như trước — giữ nguyên rule_id/thứ tự của các rule `REQUIRED` đã có để không phá test cũ (`DANG-KY-KHAI-SINH-REQ-1`...).
+
+### Hệ quả và kiểm chứng
+
+- Mặc định (`rag_demo_k1_approved=False`): hành vi giống hệt trước D-019, `test_rag_adapter.py` (needs_review/None/official_review_required) không đổi.
+- Khi bật demo flag: `validate`/`checklist` cho 3 procedure RAG trả `verified_guidance`, hiện `form_schema`/`steps`, và rule engine tạo finding thật (required/pattern/date) mà LLM có thể giải thích — dùng để demo full flow trên data thật, không phải trên fixture.
+- `procedure_version` trong mọi response khi bật demo flag sẽ chứa chuỗi `demo-k1-simulated`, giúp FE/giám khảo phân biệt rõ với bản đã qua K1 thật.
+- Cần bổ sung test cho cả hai trạng thái flag và cho pattern/date rule mới trong `backend/tests/`.
+
+### Rollback / fallback
+
+Set `RAG_DEMO_K1_APPROVED=false` (hoặc không set — đây là default) để quay lại 100% hành vi D-013. Không có migration, cloud state hay secret cần thu hồi. Form schema thường trú/hộ kinh doanh có thể tiếp tục tinh chỉnh khi procedure-research lane có nội dung mẫu CT01/Giấy đề nghị chính thức, không cần đổi API/contract.
 
 ---
 
