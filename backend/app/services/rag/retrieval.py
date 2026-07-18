@@ -1,10 +1,15 @@
 """Hybrid retrieval (keyword filter + lexical similarity) tren approved store.
 
-Khong dung numpy/scikit-learn/vector DB (Neon/pgvector van la `Proposed`/`TBD`
-theo D-005 va D-006) de tranh dependency native nang, dung pure-Python
-term-frequency cosine similarity. Chi truy hoi tren cac chunk da duoc
-allowlist trong source_store.PROCEDURE_ALLOWLIST — khong co PII, chat
-memory hay case memory nao trong index nay.
+Mac dinh (`rag_semantic_mode="lexical"`) khong dung numpy/scikit-learn/vector
+DB (Neon/pgvector van la `Proposed`/`TBD` theo D-005/D-006) de tranh
+dependency native nang, dung pure-Python term-frequency cosine similarity.
+Khi bat `rag_semantic_mode="hybrid"` (D-013), score lexical duoc blend them
+voi semantic similarity tu `vector_index.SemanticIndex` (embedding tieng
+Viet + FAISS, chay in-process, khong ket noi service ngoai) — neu semantic
+layer khong san sang (thieu dependency/model) thi tu dong fail-closed ve
+dung lexical score nhu truoc, hanh vi khong doi. Chi truy hoi tren cac
+chunk da duoc allowlist trong source_store.PROCEDURE_ALLOWLIST — khong co
+PII, chat memory hay case memory nao trong index nay.
 """
 
 from __future__ import annotations
@@ -28,6 +33,7 @@ from app.services.rag.source_store import (
     load_approved_records,
     strip_diacritics,
 )
+from app.services.rag.vector_index import SemanticIndex
 
 _TOKEN_RE = re.compile(r"[a-zA-Z0-9]+")
 _STOPWORDS = {
@@ -99,6 +105,11 @@ class _ScoredChunk:
         )
 
 
+def _blend(lexical_score: float, semantic_score: float) -> float:
+    weight = get_settings().rag_semantic_weight
+    return (1 - weight) * lexical_score + weight * semantic_score
+
+
 @lru_cache(maxsize=1)
 def _build_index() -> Dict[str, List[_ScoredChunk]]:
     records_by_procedure = load_approved_records()
@@ -121,6 +132,7 @@ class RetrievalService:
         """Chi dung trong test: xoa cache khi doi RAG_SOURCE_DIR."""
         _build_index.cache_clear()
         load_approved_records.cache_clear()
+        SemanticIndex.clear_cache()
 
     @staticmethod
     def known_procedure_ids() -> List[str]:
@@ -130,12 +142,23 @@ class RetrievalService:
     def recommend_procedure(query_text: str, top_k: int = 3) -> List[ProcedureCandidate]:
         query_vector = _term_vector(_tokenize(query_text))
         index = _build_index()
+        semantic_available = SemanticIndex.is_available()
         best_per_procedure: Dict[str, float] = {}
 
         for procedure_id, scored_chunks in index.items():
+            semantic_scores = (
+                SemanticIndex.score_chunks(query_text, [s.chunk for s in scored_chunks])
+                if semantic_available
+                else {}
+            )
             best_score = 0.0
             for scored in scored_chunks:
-                score = _cosine_similarity(query_vector, scored.vector)
+                lexical_score = _cosine_similarity(query_vector, scored.vector)
+                score = (
+                    _blend(lexical_score, semantic_scores[scored.chunk.chunk_id])
+                    if scored.chunk.chunk_id in semantic_scores
+                    else lexical_score
+                )
                 if score > best_score:
                     best_score = score
             best_per_procedure[procedure_id] = best_score
@@ -166,12 +189,24 @@ class RetrievalService:
 
         candidate_procedures = [query.procedure_id] if query.procedure_id else list(index.keys())
         query_vector = _term_vector(_tokenize(query.text)) if query.text else Counter()
+        semantic_available = bool(query.text) and SemanticIndex.is_available()
 
         scored: List[tuple] = []
         for procedure_id in candidate_procedures:
-            for scored_chunk in index.get(procedure_id, []):
-                score = (
+            procedure_chunks = index.get(procedure_id, [])
+            semantic_scores = (
+                SemanticIndex.score_chunks(query.text, [s.chunk for s in procedure_chunks])
+                if semantic_available
+                else {}
+            )
+            for scored_chunk in procedure_chunks:
+                lexical_score = (
                     _cosine_similarity(query_vector, scored_chunk.vector) if query_vector else 1.0
+                )
+                score = (
+                    _blend(lexical_score, semantic_scores[scored_chunk.chunk.chunk_id])
+                    if scored_chunk.chunk.chunk_id in semantic_scores
+                    else lexical_score
                 )
                 scored.append((score, scored_chunk.chunk))
 

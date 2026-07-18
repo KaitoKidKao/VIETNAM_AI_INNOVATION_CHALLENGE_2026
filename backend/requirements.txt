@@ -11,6 +11,14 @@ httpx>=0.25.0
 # van chay duoc, gateway se fallback deterministic offline.
 openai>=1.40.0
 
+# RAG semantic layer (optional, xem app/services/rag/vector_index.py, D-013).
+# Chi duoc import khi RAG_SEMANTIC_MODE=hybrid. Thieu 2 package nay van chay
+# duoc, retrieval se tu dong fail-closed ve lexical-only (hanh vi mac dinh
+# khong doi). Luu y: sentence-transformers keo theo torch (~vai tram MB-GB),
+# lan dau bat hybrid can network de download model tu HuggingFace Hub.
+sentence-transformers>=3.0.0
+faiss-cpu>=1.8.0
+
 # Testing and development
 pytest>=7.4.0
 black>=23.0.0

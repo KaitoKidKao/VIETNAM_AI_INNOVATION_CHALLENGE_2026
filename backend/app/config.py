@@ -43,6 +43,16 @@ class Settings(BaseSettings):
     rag_top_k: int = Field(default=5, ge=1, le=50)
     rag_min_confidence: float = Field(default=0.12, ge=0, le=1)
 
+    # --- RAG semantic layer (optional, xem D-013) ---
+    # Mac dinh "lexical" de khong doi hanh vi cu / khong yeu cau dependency
+    # nang (sentence-transformers + faiss) khi may/CI khong co san. Bat
+    # "hybrid" (+ cai `pip install -r requirements.txt`) de blend semantic
+    # score tu embedding tieng Viet vao lexical score hien tai; neu model/
+    # faiss khong load duoc thi tu dong fail-closed ve lexical thuan.
+    rag_semantic_mode: Literal["lexical", "hybrid"] = "lexical"
+    rag_embedding_model: str = "bkai-foundation-models/vietnamese-bi-encoder"
+    rag_semantic_weight: float = Field(default=0.4, ge=0, le=1)
+
     # --- Guardrail / PII Guard (session-scoped, in-memory, xem D-006) ---
     pii_token_ttl_seconds: int = Field(default=1_800, ge=1)
 

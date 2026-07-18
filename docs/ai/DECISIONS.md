@@ -269,6 +269,41 @@ Nếu retrieval lexical không đủ chất lượng cho demo, đặt lại `pro
 
 ---
 
+## D-012 — RAG semantic layer optional (embedding tiếng Việt + FAISS in-process)
+
+- **Trạng thái:** Proposed
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** Cursor theo yêu cầu người dùng hiện tại
+- **Phạm vi:** API | dependency | data
+- **Task Record:** `local-20260718-rag-llm-guardrail`
+- **Peer xác nhận:** cần một peer khác xác nhận (đổi baseline "không vector DB" của D-005/D-006)
+
+### Bối cảnh
+
+D-005/D-006 chốt retrieval pure-Python lexical, không dùng numpy/scikit-learn/vector DB để tránh dependency native nặng và giữ demo chạy offline không cần API key. Người dùng hiện tại yêu cầu bổ sung Vector DB + chunking "data-structure-aware" (tham khảo `rag/app/table.py`/`laws.py` của infiniflow/ragflow) vì dữ liệu thủ tục hành chính có nhiều bảng/thông tin dạng cấu trúc mà lexical thuần có thể bỏ sót khi câu hỏi không trùng từ khoá.
+
+### Lựa chọn đã cân nhắc
+
+1. Port thẳng kiến trúc ragflow (pandas/numpy/DeepDOC OCR/Elasticsearch hoặc Infinity engine) — không phù hợp vì nguồn dữ liệu là text đã có field tag sẵn (không phải PDF/Office thô cần OCR) và quá nặng cho hackathon.
+2. Vector DB ngoài (Neon/pgvector thật như D-006 đề xuất ban đầu) — yêu cầu Postgres service ngoài, rủi ro network/account cho demo.
+3. Semantic layer optional, in-process: embedding tiếng Việt (`bkai-foundation-models/vietnamese-bi-encoder`, fine-tune trên Zalo Legal Text Retrieval — gần domain văn bản hành chính/pháp lý) + FAISS `IndexFlatIP` (không cần service ngoài), bật qua flag `rag_semantic_mode=hybrid`, mặc định vẫn `lexical` (hành vi cũ không đổi); nếu thiếu dependency/model tự fail-closed về lexical.
+
+### Quyết định
+
+Chọn phương án 3. `app/services/rag/vector_index.py::SemanticIndex` lazy-load `sentence-transformers`/`faiss`; `RetrievalService` (`retrieval.py`) blend `lexical_score`/`semantic_score` theo `rag_semantic_weight` (mặc định 0.4) chỉ khi `SemanticIndex.is_available()` trả `True`, ngược lại giữ đúng lexical score như D-006/D-011. Chunking row-level (mỗi hình thức nộp/giấy tờ/cơ quan thực hiện = 1 `EvidenceChunk` riêng, xem `chunking.py`/`source_store.py`) đã áp dụng nguyên tắc "1 dòng bảng = 1 chunk" của `rag/app/table.py` từ trước khi có quyết định này — không đổi thêm ở đây.
+
+### Hệ quả và kiểm chứng
+
+- Mặc định `rag_semantic_mode=lexical`: hành vi/test hiện có không đổi (`pytest` 48 passed, không cần cài `sentence-transformers`/`faiss`).
+- Bật `hybrid` cần `pip install sentence-transformers faiss-cpu` (kéo theo `torch`, vài trăm MB–GB) và network để tải model lần đầu từ HuggingFace Hub; nếu không có, tự fail-closed về lexical, không crash.
+- Test mới `tests/test_vector_index.py` dùng monkeypatch để xác nhận logic blend đúng mà không cần download model thật (môi trường test không cài 2 package trên).
+
+### Rollback / fallback
+
+Đặt `RAG_SEMANTIC_MODE=lexical` (hoặc bỏ trống, đây là default) để tắt hoàn toàn semantic layer, không cần đổi code. Nếu model tiếng Việt không tải được lúc demo, hệ thống tự fail-closed về lexical-only.
+
+---
+
 ## Mẫu quyết định mới
 
 ```md
