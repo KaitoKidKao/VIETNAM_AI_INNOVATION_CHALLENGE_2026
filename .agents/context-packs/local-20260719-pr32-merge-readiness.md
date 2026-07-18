@@ -48,10 +48,10 @@
 
 ## Kiểm chứng và handoff
 
-- Commands / manual checks: `python -m unittest tests.ci.test_validate_repo`; `python scripts/ci/validate_repo.py`; range guard của PR merge ref; `git diff --check`.
-- Demo impact và rollback: không ảnh hưởng runtime/deploy; revert commit waiver để khôi phục strict policy trước đó.
-- Evidence / kết quả: pending.
-- AI-Log ID + capture status: pending manual.
-- Files, API và resources đã chạm: pending.
-- Claims đã release: pending.
+- Commands / manual checks: `python -m unittest discover -s tests/ci -p test_*.py` (21 pass); `python -m unittest discover -s tests/ai_log -p test_*.py` (12 pass); `python scripts/ci/validate_repo.py` và `--range origin/main...HEAD` pass; `git diff --check` trên scope ngoài `data/**` pass.
+- Demo impact và rollback: không ảnh hưởng runtime/deploy; revert các commit task này để khôi phục strict policy trước đó.
+- Evidence / kết quả: PR #32 không có Git conflict, nhưng trước task có marker conflict trong `docs/ai/DECISIONS.md`; marker và ID trùng đã được xử lý. Full `git diff --check origin/main...HEAD` vẫn báo trailing whitespace trong raw `data/Data_DVC/**` đã có từ PR #32, ngoài claim; CI data metadata hiện pass nhưng data owner vẫn phải review trước merge main.
+- AI-Log ID + capture status: `log-28068a92fa804be28939e27b / manual`; `log-265c4077f0874531b15e6f25 / warning` cho Context Pack follow-up không có prompt mới.
+- Files, API và resources đã chạm: policy AI Log, repository guard/tests, Decision Log, README/Deployment references và Context Pack; không chạm public API/runtime/data.
+- Claims đã release: release sau khi PR fix vào `dev` và CI của PR #32 xanh.
 - Việc tiếp theo hoặc peer có thể tiếp nhận: peer review waiver/data/RAG scope của PR #32 trước merge main.
