@@ -4,10 +4,10 @@
 
 - Task ID: `local-20260719-phase6-1-intent-router`
 - Mode: `verify-demo`
-- Status: `handoff`
+- Status: `done`
 - Owner tam thoi: Codex
 - Base ref: `cao` / `e84e4bb`
-- Branch/worktree: `fix/local-20260719-phase6-1-intent-router` / dedicated worktree
+- Branch/worktree: integrated into local `cao`; feature worktree retained as a recovery point
 - Risk: `shared` (intake routing and trust disposition)
 - AI Log: chua bat; khong capture prompt trong task nay
 
@@ -49,5 +49,5 @@
   - Backend + evaluation full regression: `87 passed`, one Starlette dependency deprecation warning.
   - Golden CLI: exit `0`; routing `60/60`, false/missed/wrong route `0`, fail-closed errors `0`, false verified `0`, demo/HTTP errors `0`.
   - Public API schema unchanged; no dependency, provider, network, secret or port used.
-- Resource release: release after commit/fast-forward; no port/server/cloud resource was claimed.
+- Resource release: released after fast-forward to local `cao`; no port/server/cloud resource was claimed.
 - Publish: no push/PR in this task.
