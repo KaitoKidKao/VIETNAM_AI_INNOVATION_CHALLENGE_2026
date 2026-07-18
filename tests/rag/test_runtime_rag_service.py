@@ -8,7 +8,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = REPOSITORY_ROOT / "backend"
 sys.path.insert(0, str(BACKEND_ROOT))
@@ -99,7 +98,7 @@ class RuntimeRAGServiceTests(unittest.TestCase):
             rag_service._cached_chunks = original
 
         self.assertTrue(
-            any(source.ref_code == chunk.chunk_id for source in response.sources)
+            any(source.ref_id == chunk.chunk_id for source in response.source_refs)
         )
 
     def test_grounded_answer_uses_llm_when_evidence_exists(self) -> None:

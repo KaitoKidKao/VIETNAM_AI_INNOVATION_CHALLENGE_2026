@@ -14,7 +14,6 @@ from backend.app.rag.approved import (
 )
 from scripts.data.prepare_approved_source_manifest import build_template_rows
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 PHASE1_MANIFEST = (
     REPOSITORY_ROOT / "tests" / "rag" / "fixtures" / "chunking_phase1_manifest.csv"
@@ -56,7 +55,9 @@ class ApprovedPackTests(unittest.TestCase):
                 writer.writeheader()
                 writer.writerow(row)
 
-            records, report = build_approved_pack(manifest, REPOSITORY_ROOT, "2026-07-18")
+            records, report = build_approved_pack(
+                manifest, REPOSITORY_ROOT, "2026-07-18"
+            )
 
         self.assertEqual(1, report["selected"])
         self.assertGreater(report["approved"], 0)

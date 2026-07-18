@@ -10,10 +10,15 @@ from .chunking import ChunkSourceMetadata
 from .normalization import NORMALIZER_VERSION
 from .parsing import PARSER_VERSION
 
-
 SOURCE_REGISTRY_VERSION = "vaic-source-registry-v1"
 APPROVED_REVIEW_STATUS = "approved"
-RELEASE_BLOCKED_REVIEW_STATUSES = {"staging", "parsed", "needs_review", "rejected", "stale"}
+RELEASE_BLOCKED_REVIEW_STATUSES = {
+    "staging",
+    "parsed",
+    "needs_review",
+    "rejected",
+    "stale",
+}
 VALID_PERMISSION_STATUSES = {"official_public", "permission_recorded"}
 
 
@@ -142,9 +147,7 @@ class SourceDocumentRegistry:
         return self._by_id.get(source_id)
 
     def approved_sources(self, as_of: str | None = None) -> tuple[SourceDocument, ...]:
-        return tuple(
-            source for source in self._sources if source.is_release_eligible(as_of=as_of)
-        )
+        return tuple(source for source in self._sources if source.is_release_eligible(as_of=as_of))
 
     def release_issues(
         self, as_of: str | None = None

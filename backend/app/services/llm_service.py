@@ -14,7 +14,6 @@ from app.config import (
 from app.models.rag import EvidenceHit, GroundedAnswerResponse
 from app.services.rag_service import RAGService
 
-
 OFFICIAL_REVIEW_REQUIRED = "official_review_required"
 
 
@@ -30,8 +29,7 @@ class LLMClient(Protocol):
         *,
         query: str,
         evidence: list[EvidenceHit],
-    ) -> LLMResult:
-        ...
+    ) -> LLMResult: ...
 
 
 class OpenAILLMClient:
@@ -108,9 +106,7 @@ def _build_grounded_prompt(*, query: str, evidence: list[EvidenceHit]) -> str:
         )
     return (
         f"CÂU HỎI NGƯỜI DÙNG:\n{query}\n\n"
-        "EVIDENCE ĐÃ DUYỆT:\n"
-        + "\n\n".join(evidence_blocks)
-        + "\n\nYÊU CẦU TRẢ LỜI:\n"
+        "EVIDENCE ĐÃ DUYỆT:\n" + "\n\n".join(evidence_blocks) + "\n\nYÊU CẦU TRẢ LỜI:\n"
         "- Trả lời ngắn gọn bằng tiếng Việt có dấu.\n"
         "- Chỉ sử dụng thông tin trong EVIDENCE.\n"
         "- Nếu có cảnh báo hoặc ràng buộc quan trọng, nêu rõ và dẫn [ma_chunk].\n"

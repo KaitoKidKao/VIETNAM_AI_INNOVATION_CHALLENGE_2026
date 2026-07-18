@@ -9,13 +9,14 @@ from pathlib import Path
 
 from scripts.data.build_demo_clean_rag_pack import main
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
 
 class DemoCleanPackTests(unittest.TestCase):
     def test_demo_clean_pack_outputs_flat_chunks(self) -> None:
-        with tempfile.TemporaryDirectory(dir=REPOSITORY_ROOT / "artifacts") as directory:
+        with tempfile.TemporaryDirectory(
+            dir=REPOSITORY_ROOT / "artifacts"
+        ) as directory:
             root = Path(directory)
             result = main(
                 [

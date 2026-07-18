@@ -5,52 +5,16 @@ from uuid import uuid4
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-<<<<<<< HEAD
-from app.config import ALLOWED_ORIGINS
-from app.routers import health, procedures, intake, validation, rag
-=======
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
->>>>>>> ddc7b1c1b86ad8bb29a4c1b0475fe5e483cb0750
 
 from app.config import Settings, get_settings
 from app.dependencies import AppContainer, build_container
 from app.models.common import APIError, ErrorEnvelope
 from app.models.errors import AppError
 from app.rate_limit import InMemoryRateLimiter
-from app.routers import health, intake, procedures, validation
+from app.routers import health, intake, procedures, rag, validation
 
-<<<<<<< HEAD
-
-@app.get("/")
-def root():
-    return {
-        "service": "AI Procedure Copilot API",
-        "status": "ok",
-        "docs": "/docs",
-        "health": "/health",
-        "rag_search_get": "/v1/rag/search?query=giay%20chung%20sinh&procedure_id=dang-ky-khai-sinh&top_k=3",
-        "rag_search_post": "/v1/rag/search",
-        "rag_answer_get": "/v1/rag/answer?query=giay%20chung%20sinh&procedure_id=dang-ky-khai-sinh&top_k=3",
-        "rag_answer_post": "/v1/rag/answer",
-    }
-
-# Configure CORS for frontend integration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Register routers
-app.include_router(health.router)
-app.include_router(procedures.router)
-app.include_router(intake.router)
-app.include_router(validation.router)
-app.include_router(rag.router)
-=======
 
 def _error_response(
     request: Request,
@@ -152,12 +116,21 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
         )
         return _error_response(request, exc.status_code, code, message)
 
+    @app.get("/")
+    def root() -> dict[str, str]:
+        return {
+            "service": "AI Procedure Copilot API",
+            "status": "ok",
+            "docs": "/docs",
+            "health": "/health",
+        }
+
     app.include_router(health.router)
     app.include_router(procedures.router)
     app.include_router(intake.router)
     app.include_router(validation.router)
+    app.include_router(rag.router)
     return app
 
 
 app = create_app()
->>>>>>> ddc7b1c1b86ad8bb29a4c1b0475fe5e483cb0750

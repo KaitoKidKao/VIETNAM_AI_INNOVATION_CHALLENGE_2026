@@ -9,7 +9,6 @@ from app.models.rag import (
 from app.services.llm_service import GroundedRAGAnswerService
 from app.services.rag_service import RAGService
 
-
 router = APIRouter(prefix="/v1")
 
 

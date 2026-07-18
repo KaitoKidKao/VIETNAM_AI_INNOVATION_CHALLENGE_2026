@@ -43,7 +43,9 @@ class SourceGateTests(unittest.TestCase):
         self.assertEqual(("https://example.gov/source-1",), metadata.source_refs)
 
     def test_needs_review_source_is_not_release_eligible(self) -> None:
-        source = _source(review_status="needs_review", reviewed_by=None, reviewed_at=None)
+        source = _source(
+            review_status="needs_review", reviewed_by=None, reviewed_at=None
+        )
         issues = source.validation_issues(as_of="2026-07-18")
 
         self.assertFalse(source.is_release_eligible(as_of="2026-07-18"))
