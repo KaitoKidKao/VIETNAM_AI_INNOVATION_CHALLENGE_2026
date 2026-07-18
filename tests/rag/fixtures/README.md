@@ -64,3 +64,18 @@ fixtures remain `needs_review`, so the smoke command should fail closed with
 ```powershell
 python scripts/data/evaluate_keyword_retrieval.py
 ```
+
+## Phase 5/6 source gate and Recall@K
+
+`SourceDocument` validation blocks unreviewed, stale, future-effective or
+incomplete provenance from producing `approved` chunk metadata. Recall@K
+evaluation is available for approved chunk JSONL artifacts, with a synthetic
+smoke path that does not use raw corpus data:
+
+```powershell
+python scripts/data/evaluate_retrieval_golden.py --sample
+```
+
+For real K1-approved chunks, pass `--chunks artifacts/...jsonl`; the CLI rejects
+tracked output paths so approved/rebuilt artifacts stay local unless a separate
+publication task allows them.
