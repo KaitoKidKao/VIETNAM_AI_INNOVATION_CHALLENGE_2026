@@ -220,6 +220,25 @@ body {
   animation: floatLotus 6s ease-in-out infinite;
 }
 
+@keyframes drumSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-drum-spin {
+  animation: drumSpin 100s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drum-spin {
+    animation: none;
+  }
+}
+
 .hover-lift {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
 }
