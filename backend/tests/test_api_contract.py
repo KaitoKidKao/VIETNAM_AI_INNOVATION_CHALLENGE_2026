@@ -201,9 +201,34 @@ def test_openapi_exposes_current_public_routes(client: TestClient) -> None:
         "/v1/procedures",
         "/v1/procedures/{procedure_id}/checklist",
         "/v1/procedures/recommend",
-        "/v1/rag/answer",
-        "/v1/rag/search",
     }
+
+
+def test_legacy_rag_routes_require_explicit_opt_in(client: TestClient) -> None:
+    default_paths = client.get("/openapi.json").json()["paths"]
+    default_root = client.get("/").json()
+
+    assert "/v1/rag/search" not in default_paths
+    assert "/v1/rag/answer" not in default_paths
+    assert client.get("/v1/rag/search", params={"query": "test"}).status_code == 404
+    assert client.get("/v1/rag/answer", params={"query": "test"}).status_code == 404
+    assert default_root["intake_turn"] == "/v1/intake/turn"
+    assert "legacy_rag_search" not in default_root
+    assert "legacy_rag_answer" not in default_root
+
+    enabled_settings = Settings(
+        app_env="test",
+        procedure_data_mode="fixture",
+        legacy_rag_enabled=True,
+    )
+    enabled_client = TestClient(create_app(settings=enabled_settings))
+    enabled_paths = enabled_client.get("/openapi.json").json()["paths"]
+    enabled_root = enabled_client.get("/").json()
+
+    assert "/v1/rag/search" in enabled_paths
+    assert "/v1/rag/answer" in enabled_paths
+    assert enabled_root["legacy_rag_search"] == "/v1/rag/search"
+    assert enabled_root["legacy_rag_answer"] == "/v1/rag/answer"
 
 
 def test_production_rejects_dev_fixture() -> None:

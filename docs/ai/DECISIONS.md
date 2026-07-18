@@ -588,3 +588,52 @@ Xoá token `gov-*`/`portal-*` khỏi `globals.css` và revert các component tro
 ### Rollback / fallback
 <Cách quay lại hoặc cách demo nếu phương án lỗi.>
 ```
+
+---
+
+## D-019 - Legacy RAG opt-in and offline-safe backend container
+
+- **Trang thai:** Accepted
+- **Ngay:** 2026-07-19
+- **Nguoi de xuat:** User va Codex
+- **Pham vi:** API | deploy artifact | demo | safety
+- **Task Record:** `local-20260719-phase7-legacy-rag-docker`
+- **Peer xac nhan:** User chon Phase 7 Option 1
+
+### Boi canh
+
+D-013 cong khai hai route RAG additive, nhung frontend hien tai da dung mot flow
+canonical qua `/v1/intake/turn`. Backend van mount va quang ba hai route legacy
+ngay ca khi `LEGACY_RAG_ENABLED=false`, lam tang public surface va tao hai runtime
+flow co the lech nhau. Docker image hien chua khai bao ro demo/offline defaults va
+chua co container healthcheck.
+
+### Quyet dinh
+
+- Giu source code legacy RAG de debug, nhung chi mount router khi
+  `LEGACY_RAG_ENABLED=true`.
+- Khi flag la `false` (default), `/v1/rag/search` va `/v1/rag/answer` tra 404,
+  khong xuat hien trong OpenAPI va khong duoc quang ba o root response.
+- Frontend tiep tuc chi dung `/v1/intake/turn`; khong them compatibility fallback
+  sang legacy RAG.
+- Backend container mac dinh chay `PROCEDURE_DATA_MODE=demo_pack`,
+  `RAG_MODE=disabled`, `LLM_MODE=disabled`, `LEGACY_RAG_ENABLED=false`, bang
+  non-root user va co healthcheck dung Python standard library.
+- Image chi copy runtime backend code va locked dependencies. Khong copy `.env`,
+  raw corpus, generated RAG artifacts, tests, model assets hoac secrets; khong goi
+  provider va khong tai model trong build/smoke cua task nay.
+
+### He qua va kiem chung
+
+- Default public API co mot conversation flow canonical va fail closed.
+- Local developer van co the bat legacy endpoints mot cach co chu dich bang env
+  flag va restart backend.
+- Contract tests phai kiem tra ca hai trang thai flag; Docker contract phai kiem
+  tra offline defaults, healthcheck, non-root user va build context allowlist.
+- Docker runtime smoke chi chay khi daemon va base image local san sang, khong pull.
+
+### Rollback / fallback
+
+Dat `LEGACY_RAG_ENABLED=true` cho debug local, hoac revert task commit de quay lai
+mount router vo dieu kien. Khong co migration, secret, provider hay cloud state can
+thu hoi.

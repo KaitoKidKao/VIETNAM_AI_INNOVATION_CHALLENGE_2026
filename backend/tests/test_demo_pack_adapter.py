@@ -270,6 +270,4 @@ def test_openapi_route_set_includes_feedback(client: TestClient) -> None:
         "/v1/procedures",
         "/v1/procedures/{procedure_id}/checklist",
         "/v1/procedures/recommend",
-        "/v1/rag/answer",
-        "/v1/rag/search",
     }
