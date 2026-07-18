@@ -39,3 +39,10 @@ class ValidationResponse(RegulatoryResponse):
     journey: JourneyProgress | None = None
     next_action: NextAction | None = None
     proposed_session_context: SessionContext = Field(default_factory=SessionContext)
+    explanations: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "rule_id -> câu diễn giải thân thiện từ LLM Gateway (best-effort, "
+            "chỉ diễn giải finding đã có, không thay đổi verdict/finding gốc)."
+        ),
+    )

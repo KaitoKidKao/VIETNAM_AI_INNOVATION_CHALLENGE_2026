@@ -26,6 +26,7 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-010 | Proposed | Fast merge gate và release artifact provider-neutral | `local-20260718-ci-cd-optimization` | 2026-07-18 |
 | D-012 | Accepted | Cloud Run backend demo foundation, production-disabled | `local-20260718-gcp-backend-deploy` | 2026-07-18 |
 | D-013 | Accepted | Prototype-driven stateless API read models for the six existing v1 routes | `local-20260718-prototype-api-contract` | 2026-07-18 |
+| D-011 | Proposed | RAG in-process (không pgvector), LLM Gateway OpenAI-compatible với offline fallback, PII Guard regex in-memory, tích hợp vào CopilotService/ports adapter | `local-20260718-rag-llm-guardrail` | 2026-07-18 |
 
 ---
 
@@ -228,45 +229,45 @@ Revert workflow, guard helper và release-manifest changes để quay về repos
 
 ---
 
-## D-012 — Cloud Run backend demo foundation, production-disabled
+## D-011 — RAG in-process, LLM Gateway OpenAI-compatible, PII Guard regex in-memory
 
-- **Trạng thái:** Accepted
+- **Trạng thái:** Proposed
 - **Ngày:** 2026-07-18
-- **Người đề xuất:** User-requested deployment task
-- **Phạm vi:** deploy / security / demo
-- **Task Record:** `local-20260718-gcp-backend-deploy`
-- **Peer xác nhận:** `hdtruong802` (user), 2026-07-18
+- **Người đề xuất:** Cursor theo yêu cầu người dùng hiện tại
+- **Phạm vi:** API | dependency | data | process
+- **Task Record:** `local-20260718-rag-llm-guardrail`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** Chưa có peer khác online tại thời điểm thực hiện (roster `TEAM.md` còn `TBD`); cần một peer xác nhận trước khi coi là `Accepted`, đặc biệt nếu bước vào 6 giờ cuối.
 
 ### Bối cảnh
 
-Backend FastAPI theo D-005 cần một pathway public demo độc lập với frontend. D-006 đã chấp thuận target architecture, nhưng data/RAG/LLM chưa được triển khai. Deploy khi fixture còn chạy hoặc không có rollback sẽ tạo rủi ro hướng dẫn sai và chi phí không kiểm soát.
+`docs/proposal.md` mục 5 đề xuất kiến trúc RAG/Knowledge, LLM Gateway provider-neutral và PII Guard, nhưng đánh dấu framework/model provider/database là `TBD`. `PROJECT_CONTEXT.md` đã chốt `AI/model/provider: Provider-neutral adapter` và `Data/storage: Neon Postgres (pgvector)` ở trạng thái `Proposed` (chưa `Accepted`, chưa provision). Cần triển khai đủ 3 năng lực để demo end-to-end trong thời gian hackathon còn lại mà không chờ hạ tầng Neon/pgvector hoặc secret model provider thật.
 
 ### Lựa chọn đã cân nhắc
 
-1. Chờ toàn bộ product stack/deploy topology: ít rủi ro, nhưng chưa có đường chuẩn bị backend demo độc lập.
-2. Deploy mọi capability ngay: nhanh hơn bề ngoài nhưng vi phạm fail-closed và mở rộng sang data/AI/storage.
-3. Chuẩn bị Cloud Run backend-only, production-disabled: container/API có public demo pathway nhưng không có procedure data, RAG, LLM, database hoặc secret.
+1. Chờ Neon/pgvector + provider thật được provision trước khi code — an toàn về kiến trúc dài hạn nhưng rủi ro P0 "demo không ổn định" nếu hackathon hết giờ trước khi có infra.
+2. Dùng thư viện vector/ML nặng (`numpy`/`scikit-learn`/`sentence-transformers`) cho retrieval — chất lượng ngữ nghĩa tốt hơn nhưng vi phạm rủi ro P0 đã ghi trong `PROJECT_CONTEXT.md` ("không phụ thuộc thư viện native nặng") và tăng thời gian cài đặt/build trên máy giám khảo.
+3. RAG in-process bằng pure-Python lexical/TF-IDF hybrid trên `data/Data_DVC` (dataset thật từ nguồn thủ tục hành chính), LLM Gateway dùng client `openai` (đã có trong `requirements.txt`) trỏ `AI_BASE_URL` để provider-neutral, có fallback deterministic khi thiếu `AI_API_KEY`; PII Guard bằng regex + dict in-memory theo session, không dùng KMS/Vault.
 
 ### Quyết định
 
-Chấp thuận lựa chọn 3. Dùng Cloud Run `asia-southeast1` với Artifact Registry Docker repository `vngov-backend` cùng region, service `vngov-api`, image tag full commit SHA immutable và deploy bằng digest. Runtime là 1 vCPU/512 MiB, request-based, `min-instances=0`, `max-instances=1`, timeout 20 giây, public demo access và user-managed service account `vngov-api-runtime` không có role/secret.
+Chọn phương án 3. Cụ thể:
 
-Runtime phải có `APP_ENV=production`, `PROCEDURE_DATA_MODE=disabled`, `RAG_MODE=disabled`, `LLM_MODE=disabled`, CORS rỗng và rate limit 60 request/60 giây. `/health` phải `degraded`; không route nào được trả fixture, procedure guidance đã xác minh hoặc raw PII. Không tạo Secret Manager, Cloud SQL, Cloud Storage, Vertex AI, vector DB, VPC connector, NAT hay CD workflow trong scope này.
+- **RAG:** Structured store nạp `data/Data_DVC/*.txt`, lọc theo 3 procedure MVP bằng khớp `Tên thủ tục`/từ khóa; retrieval hybrid = keyword filter + lexical term-overlap scoring (không numpy/sklearn); trả về evidence kèm `source_ref`, `last_verified_at` (ngày source freeze), `confidence`; dưới ngưỡng confidence hoặc ngoài 3 pack => `official_review_required`. Không index PII, session hay case memory.
+- **LLM:** `LLMGateway` dùng `openai` SDK, cấu hình qua `AI_PROVIDER/AI_MODEL/AI_API_KEY/AI_BASE_URL` (đã có trong `.env.example`); system prompt ép model chỉ dùng evidence được cung cấp, chỉ trả JSON structured (intent/clarification/explanation), không tự quyết định checklist/finding. Khi thiếu `AI_API_KEY`, gateway dùng fallback templating deterministic (không gọi model, không bịa nội dung quy phạm) để demo vẫn chạy được offline.
+- **Guardrail:** `PIIGuard` regex nhận diện họ tên/số CCCD/SĐT/địa chỉ chi tiết, tokenize trước khi đưa vào LLM, map token chỉ lưu in-memory theo `session_id` với TTL phiên, không log/DB/vector.
+- **Tích hợp:** Sau khi `local-20260717-challenge-proposal`/`local-20260718-ci-cd-optimization` refactor backend sang kiến trúc hexagonal (`app/ports.py` + `AppContainer` + `CopilotService`), D-011 hiện thực RAG/LLM bằng adapter mới (`app/adapters/rag_llm.py`) implement `ProcedureRepository`/`RecommendationProvider`/`RetrievalProvider`/`LLMProvider` thay cho bản `Disabled*`; kích hoạt qua `procedure_data_mode=rag`, `rag_mode=rag`, `llm_mode=gateway`. `CopilotService`/`TrustPolicy`/`RuleEngine` gốc của D-006 giữ nguyên, không tạo `TrustPolicy` riêng.
+- Không đổi public REST schema hiện có (`ARCHITECTURE.md`); không thêm cột DB hay service ngoài.
 
 ### Hệ quả và kiểm chứng
 
-- D-012 không thay thế D-006. Cả hai đã được peer xác nhận; billing/credit, IAM, local/container smoke và candidate smoke vẫn là gate chặn provisioning hoặc traffic.
-- Build từ `backend/`, container chạy non-root và lắng nghe `PORT`; local lint/test/container smoke là gate.
-- Với service đã có stable revision, deploy candidate `--no-traffic`, smoke `/health`, `/openapi.json`, `/docs` và fail-closed contract trước khi chuyển 100% traffic. Cloud Run không hỗ trợ `--no-traffic` khi tạo service đầu tiên: sau local/container guard, bootstrap production-disabled dùng direct public smoke ngay sau deploy; không có procedure data, RAG, LLM, database hoặc secret để lộ.
-- Ghi image digest, revision, URL, timestamp, smoke result và rollback revision vào handoff; tạo budget alert 10/25/50/80/100% của 1,000,000 VND sau billing review.
+- Chạy được hoàn toàn local, không cần Neon/pgvector hay API key thật; khi có provider thật chỉ cần set env, không đổi code.
+- Cần `pytest backend/tests` cho PII Guard tokenize/detokenize, retrieval trên 3 pack, adapter mới và trust policy fail-closed.
+- Khi Neon/pgvector hoặc provider thật được Decision riêng chấp thuận, migration retrieval sang pgvector là thay adapter `RetrievalProvider`, không đổi `app/ports.py` contract.
 
 ### Rollback / fallback
 
-Nếu candidate smoke hoặc 5xx lỗi, không chuyển traffic; deploy sau rollback traffic về revision stable trước. Nếu bootstrap smoke lần đầu lỗi, gỡ public Invoker hoặc xóa service theo owner quyết định và dùng backend local làm fallback. Nếu billing/credit, IAM hoặc smoke không đạt, dừng ở artifact/runbook local.
-
-### Live deployment evidence
-
-Ngày 2026-07-18, Cloud Build `8ef35d72-ee00-4b7b-8f21-d8791d7b4bba` build image backend source commit `b49ca1d31dc5c773a934d003353bc58a72355c08` thành digest `sha256:83d9170307385b8bf34247b2d5484c47aa8bf69e666a7661acba68a08ddf74b8`. Revision `vngov-api-00001-def` đang public tại `https://vngov-api-j53prjslqa-as.a.run.app`; public smoke pass với runtime production-disabled, six-route OpenAPI, fail-closed contract và rate-limit reset. Không có database, Secret Manager, Cloud Storage application, VPC/NAT, RAG, LLM hay procedure data runtime được tạo/bật trong D-012.
+Nếu retrieval lexical không đủ chất lượng cho demo, đặt lại `procedure_data_mode=fixture`/`rag_mode=disabled`/`llm_mode=disabled` trong `Settings` để `AppContainer` quay về adapter fixture/disabled có sẵn, không cần đổi code service. Nếu LLM provider lỗi/timeout, gateway trả fallback deterministic và `TrustPolicy` chuyển `official_review_required` thay vì chặn toàn bộ luồng.
 
 ---
 
