@@ -95,7 +95,7 @@ export default function Home() {
   return (
     <>
       {view === "landing" ? (
-        <div className="relative flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-foreground antialiased">
+        <div className="portal-home relative flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-foreground antialiased">
           <LandingHeader
             onGoCopilot={handleGoCopilot}
             onComingSoon={handleOpenComingSoon}

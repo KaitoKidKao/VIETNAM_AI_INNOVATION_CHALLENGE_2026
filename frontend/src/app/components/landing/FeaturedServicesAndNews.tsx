@@ -107,8 +107,8 @@ export default function FeaturedServicesAndNews({ onSelectProcedure, onGoCopilot
         {/* Left Column: Featured Services (~64% width) */}
         <div className="lg:col-span-2 bg-[var(--portal-surface)] border border-[var(--portal-border)] rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-5">
-            <span className="w-7 h-7 rounded-full bg-[#fff2dc] text-gov-red flex items-center justify-center shrink-0">
-              <DocCheckIcon className="w-4 h-4" />
+            <span className="w-9 h-9 rounded-full bg-[#fff2dc] text-gov-red flex items-center justify-center shrink-0">
+              <DocCheckIcon className="w-[18px] h-[18px]" />
             </span>
             <h3 className="text-[26px] font-sans font-semibold text-primary">Dịch vụ công nổi bật</h3>
           </div>
@@ -130,7 +130,7 @@ export default function FeaturedServicesAndNews({ onSelectProcedure, onGoCopilot
                   </span>
                   <div className="flex-1 min-w-0">
                     <h4 className="text-[15px] font-semibold text-gov-red">{proc.title}</h4>
-                    <p className="text-[13px] text-foreground/50 font-medium mt-0.5">{proc.description}</p>
+                    <p className="text-base text-foreground/50 font-medium mt-0.5">{proc.description}</p>
                   </div>
                   <ArrowRightIcon className="w-4 h-4 text-foreground/40 group-hover:text-gov-red transition-colors shrink-0" />
                 </div>
@@ -141,7 +141,7 @@ export default function FeaturedServicesAndNews({ onSelectProcedure, onGoCopilot
           <div className="pt-4 mt-2 border-t border-border-slate text-center">
             <button
               onClick={onGoCopilot}
-              className="px-6 py-2.5 bg-gov-red text-white text-xs font-bold rounded-lg hover:bg-gov-red-hover transition-all font-sans focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gov-red/50 focus-visible:ring-offset-2"
+              className="px-6 py-2.5 bg-gov-red text-white text-sm font-bold rounded-lg hover:bg-gov-red-hover transition-all font-sans focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gov-red/50 focus-visible:ring-offset-2"
             >
               Xem tất cả dịch vụ công
             </button>
@@ -152,12 +152,12 @@ export default function FeaturedServicesAndNews({ onSelectProcedure, onGoCopilot
         <div className="bg-[var(--portal-surface)] border border-[var(--portal-border)] rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-full bg-[#fff2dc] text-gov-red flex items-center justify-center shrink-0">
-                <GuideBookIcon className="w-4 h-4" />
+              <span className="w-9 h-9 rounded-full bg-[#fff2dc] text-gov-red flex items-center justify-center shrink-0">
+                <GuideBookIcon className="w-[18px] h-[18px]" />
               </span>
               <h3 className="text-[26px] font-sans font-semibold text-primary">Cập nhật mới nhất</h3>
             </div>
-            <button onClick={() => onComingSoon("Kho văn bản tin tức đang được đồng bộ.")} className="text-xs font-bold text-gov-red hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gov-red/40 rounded-sm">Xem tất cả</button>
+            <button onClick={() => onComingSoon("Kho văn bản tin tức đang được đồng bộ.")} className="text-sm font-bold text-gov-red hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gov-red/40 rounded-sm">Xem tất cả</button>
           </div>
 
           <div className="divide-y divide-border-slate font-sans">
@@ -171,10 +171,10 @@ export default function FeaturedServicesAndNews({ onSelectProcedure, onGoCopilot
                 onKeyDown={(e) => handleRowKeyDown(e, item.onClick)}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h4 className="text-[13px] font-semibold text-foreground leading-snug group-hover:text-gov-red">{item.title}</h4>
+                  <h4 className="text-base font-semibold text-foreground leading-snug group-hover:text-gov-red">{item.title}</h4>
                   <ArrowRightIcon className="w-4 h-4 text-foreground/40 group-hover:text-gov-red transition-colors shrink-0 mt-0.5" />
                 </div>
-                <span className="text-[10px] text-foreground/50 block mt-1 font-medium">{item.date}</span>
+                <span className="text-sm text-foreground/50 block mt-1 font-medium">{item.date}</span>
               </div>
             ))}
           </div>
