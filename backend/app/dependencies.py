@@ -13,6 +13,10 @@ from app.adapters.dev_fixture import (
     FixtureRecommendationProvider,
     InMemoryAuditSink,
 )
+from app.adapters.demo_pack import (
+    DemoPackProcedureRepository,
+    DemoPackRecommendationProvider,
+)
 from app.adapters.rag_llm import (
     GatewayLLMProvider,
     RagProcedureRepository,
@@ -62,6 +66,7 @@ class AppContainer:
             "rag": "needs_review" if source_available else "unavailable",
             "external": "unavailable",
             "disabled": "unavailable",
+            "demo_pack": "ready",
         }[self.settings.procedure_data_mode]
         rag_ready = self.settings.rag_mode == "rag" and source_available
         llm_ready = self.settings.llm_mode == "gateway" and bool(
@@ -95,6 +100,9 @@ def build_container(settings: Settings) -> AppContainer:
         recommendation_provider: RecommendationProvider = (
             FixtureRecommendationProvider()
         )
+    elif settings.procedure_data_mode == "demo_pack":
+        procedure_repository = DemoPackProcedureRepository()
+        recommendation_provider = DemoPackRecommendationProvider()
     elif settings.procedure_data_mode == "rag":
         procedure_repository = RagProcedureRepository()
         recommendation_provider = RagRecommendationProvider()

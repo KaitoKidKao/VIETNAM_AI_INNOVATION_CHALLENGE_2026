@@ -100,6 +100,7 @@ class ProcedurePack(BaseModel):
     fee: str | None = Field(default=None, max_length=300)
     validation_rules: list[ValidationRule] = Field(default_factory=list)
     aliases: list[str] = Field(default_factory=list)
+    demo_pack: bool = False
 
 
 class ProcedureSummary(BaseModel):
@@ -108,6 +109,7 @@ class ProcedureSummary(BaseModel):
     version: str | None = None
     review_status: ReviewStatus
     fixture_mode: bool = False
+    demo_mode: bool = False
 
 
 class ProcedureCandidate(BaseModel):

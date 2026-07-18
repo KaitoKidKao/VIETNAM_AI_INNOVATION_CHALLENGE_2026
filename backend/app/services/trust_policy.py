@@ -38,6 +38,7 @@ class TrustPolicy:
             last_verified_at=pack.last_verified_at if can_verify else None,
             review_gate=review_gate,
             fixture_mode=pack.review_status == ReviewStatus.FIXTURE,
+            demo_mode=pack.demo_pack,
         )
 
     def needs_more_information(self, review_gate: ReviewGate | None = None) -> TrustMetadata:
