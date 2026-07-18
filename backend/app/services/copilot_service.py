@@ -32,6 +32,11 @@ from app.services.journey import (
     build_journey,
     build_procedure_card,
 )
+from app.services.intent_router import (
+    IntakeDisposition,
+    classify_intake_text,
+    disposition_message,
+)
 from app.services.rule_engine import RuleEngine
 from app.services.trust_policy import TrustPolicy
 
@@ -59,6 +64,23 @@ class CopilotService:
         return await self._procedure_repository.list_procedures()
 
     async def recommend(self, request: RecommendationRequest) -> RecommendationResponse:
+        disposition = classify_intake_text(request.need_text)
+        if disposition != IntakeDisposition.CONTINUE:
+            metadata = (
+                self._trust_policy.needs_more_information(
+                    ReviewGate.U1_PROCEDURE_CONFIRMATION
+                )
+                if disposition == IntakeDisposition.GREETING
+                else self._trust_policy.metadata_for(
+                    None, ReviewGate.U1_PROCEDURE_CONFIRMATION
+                )
+            )
+            return RecommendationResponse(
+                **metadata.model_dump(),
+                candidates=[],
+                clarifying_questions=[],
+                message_plain=disposition_message(disposition),
+            )
         candidates = await self._recommendation_provider.recommend(
             request.need_text, request.session_context
         )

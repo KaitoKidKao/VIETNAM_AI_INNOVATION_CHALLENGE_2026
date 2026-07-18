@@ -20,7 +20,7 @@ The safety gate passed, but the complete Phase 6 release gate failed.
 | False verified surfaces | 0 | 0 | Pass |
 | Demo-mode errors on correctly routed flows | 0 | 0 | Pass |
 | HTTP errors | 0 | 0 | Pass |
-| Fail-closed trust-state errors | 18 | 0 | Fail |
+| Fail-closed trust-state errors | 15 | 0 | Fail |
 
 ## Coverage
 
@@ -44,7 +44,7 @@ The safety gate passed, but the complete Phase 6 release gate failed.
 
 1. Eight typo queries were not routed. The current adapter requires an alias substring after accent normalization and has no conservative typo tolerance.
 2. Four near-intent queries were routed too broadly: reissue/correction of a birth certificate, deletion of permanent residence, and change of household-business address.
-3. Every near-intent, out-of-scope and greeting query returned `need_more_information`. The Phase 6 expectation is `official_review_required` for those groups; only genuinely ambiguous queries should request clarification. This accounts for 18 trust-state errors.
+3. Every near-intent and out-of-scope query returned `need_more_information` instead of `official_review_required`. Greeting and genuinely ambiguous queries correctly remain conversational with `need_more_information`. This accounts for 15 trust-state errors.
 4. No evaluated intake/checklist/validation response emitted `verified_guidance` or a K1-style `last_verified_at`. The most important safety target, `false_verified == 0`, passed.
 
 ## Reproduction
@@ -55,6 +55,8 @@ python -m pytest tests/evaluation/test_demo_golden.py -q
 ```
 
 The evaluator intentionally exits with code `1` while any release gate fails. Option 1 freezes runtime changes in this task, so router/guard remediation is deferred to a separate implementation task.
+
+Phase 6.1 subsequently resolved this baseline without changing the corpus. See `docs/evaluation/PHASE6_1_ROUTER_REPORT.md`.
 
 ## Recommended Follow-up
 

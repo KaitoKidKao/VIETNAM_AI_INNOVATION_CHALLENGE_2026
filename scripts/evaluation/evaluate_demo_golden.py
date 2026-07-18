@@ -240,7 +240,10 @@ def _is_false_verified(payload: dict[str, Any]) -> bool:
 
 
 def _expected_intake_trust(case: GoldenCase) -> str:
-    if case.expected_procedure_id is not None or case.category == "ambiguous":
+    if case.expected_procedure_id is not None or case.category in {
+        "ambiguous",
+        "greeting",
+    }:
         return "need_more_information"
     return "official_review_required"
 

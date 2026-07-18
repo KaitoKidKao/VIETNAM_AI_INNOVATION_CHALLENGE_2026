@@ -48,7 +48,7 @@
   - Corpus: 60 unique cases, 20 per suite, all seven required categories in every suite.
   - Evaluation tests: `5 passed`.
   - Backend + evaluation regression: `69 passed`, one Starlette dependency deprecation warning.
-  - Golden CLI: expected exit `1`; routing `48/60` (`0.80`), false routes `4`, missed routes `8`, false verified `0`, fail-closed trust errors `18`, demo/HTTP errors `0`.
+  - Golden CLI: expected exit `1`; routing `48/60` (`0.80`), false routes `4`, missed routes `8`, false verified `0`, fail-closed trust errors `15`, demo/HTTP errors `0` after correcting greeting expectation.
   - Full-tree repo guard is blocked by pre-existing `.codex/hooks.json` and `.cursor/hooks.json` in base; staged guard is required for task diff.
 - Resource release: released after fast-forward to local `cao`; no port/server/cloud resource was claimed.
 - Publish: khong push/PR trong task nay.

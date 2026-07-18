@@ -62,15 +62,22 @@ def test_every_suite_covers_all_required_categories() -> None:
         assert categories == REQUIRED_CATEGORIES
 
 
-def test_offline_suite_never_emits_verified_or_k1_timestamp() -> None:
+def test_offline_suite_passes_phase6_release_gate() -> None:
     cases = load_golden_cases(DEFAULT_GOLDEN)
 
     report = evaluate_cases(build_offline_client(), cases)
 
     assert report.case_count == 60
+    assert report.route_correct_count == 60
+    assert report.routing_accuracy == 1.0
+    assert report.false_route_count == 0
+    assert report.missed_route_count == 0
+    assert report.wrong_route_count == 0
     assert report.false_verified_count == 0
+    assert report.fail_closed_error_count == 0
     assert report.demo_mode_error_count == 0
     assert report.http_error_count == 0
+    assert report.passed(1.0, 0) is True
 
 
 def test_gate_rejects_any_false_verified_surface() -> None:
