@@ -465,6 +465,40 @@ Xoá token `gov-*`/`portal-*` khỏi `globals.css` và revert các component tro
 
 ---
 
+## D-016 — Tích hợp direct web-to-API, giữ production fail-closed trước K1
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** hdtruong802 / Codex
+- **Phạm vi:** API / deploy / demo / CI
+- **Task Record:** `local-20260718-main-ci-api-integration`
+- **Peer xác nhận:** user — xác nhận ba pack K1 là hướng mục tiêu, kết nối direct API + CORS và dừng nếu CI/CORS/trust không đạt.
+
+### Bối cảnh
+
+`main` có frontend web mới và Cloud Run backend công khai, nhưng CI đang lỗi ở repository policy, metadata dữ liệu, Black và lockfile frontend. Backend production hiện đúng chủ đích ở trạng thái `degraded`: procedure data, RAG và LLM đều disabled. Candidate/synthetic demo artifact theo D-014 không thay thế bằng chứng K1 hoặc căn cứ pháp lý đã duyệt.
+
+### Quyết định
+
+- Giữ nguyên sáu route `/v1` hiện có; chỉ đồng bộ trường DTO additive đã có trong D-013 giữa frontend và backend.
+- Web frontend gọi trực tiếp Cloud Run API qua `NEXT_PUBLIC_API_BASE_URL`; CORS runtime chỉ allowlist chính xác `https://vngov.vercel.app`, không dùng `*`.
+- Production tiếp tục `PROCEDURE_DATA_MODE=disabled`, `RAG_MODE=disabled`, `LLM_MODE=disabled` cho đến khi ba Procedure Pack có nguồn sâu, ngày hiệu lực, quyền sử dụng và K1 reviewer evidence thật.
+- Khi backend trả `official_review_required`, frontend không được trình bày checklist, form, citation hoặc pre-check fixture như guidance đã xác minh.
+- Sửa CI theo fail-fast scope hiện có; Vercel Git integration được để deploy production sau khi `main` có build xanh, không thêm CD/provider credential vào repo.
+
+### Hệ quả và kiểm chứng
+
+- UI có thể xác nhận kết nối health/CORS và luồng fallback an toàn ngay cả khi knowledge capability disabled.
+- Cần kiểm tra frontend build từ lockfile, backend formatting/tests, repository/data guards, health response production/degraded và preflight của đúng origin trước publish/deploy.
+- Vercel project owner cần đặt `NEXT_PUBLIC_API_BASE_URL=https://vngov-api-j53prjslqa-as.a.run.app` trong Production Environment nếu chưa có; đây là public URL, không phải secret.
+- Evidence ngày 2026-07-18: Cloud Run revision `vngov-api-00008-hez` nhận 100% traffic sau smoke `health` và preflight từ `https://vngov.vercel.app`; origin ngoài allowlist bị từ chối. Revision `vngov-api-00002-hav` được giữ làm rollback target.
+
+### Rollback / fallback
+
+Revert các trường frontend additive nếu consumer incompatibility; chuyển Cloud Run về revision trước nếu CORS/smoke lỗi. Giữ UI ở `official_review_required` và backend disabled nếu K1 chưa hoàn tất.
+
+---
+
 ## Mẫu quyết định mới
 
 ```md

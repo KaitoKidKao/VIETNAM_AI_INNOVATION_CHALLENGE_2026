@@ -127,9 +127,7 @@ class RetrievalService:
         return list(PROCEDURE_DISPLAY_NAME.keys())
 
     @staticmethod
-    def recommend_procedure(
-        query_text: str, top_k: int = 3
-    ) -> List[ProcedureCandidate]:
+    def recommend_procedure(query_text: str, top_k: int = 3) -> List[ProcedureCandidate]:
         query_vector = _term_vector(_tokenize(query_text))
         index = _build_index()
         best_per_procedure: Dict[str, float] = {}
@@ -166,18 +164,14 @@ class RetrievalService:
                 conflict=False,
             )
 
-        candidate_procedures = (
-            [query.procedure_id] if query.procedure_id else list(index.keys())
-        )
+        candidate_procedures = [query.procedure_id] if query.procedure_id else list(index.keys())
         query_vector = _term_vector(_tokenize(query.text)) if query.text else Counter()
 
         scored: List[tuple] = []
         for procedure_id in candidate_procedures:
             for scored_chunk in index.get(procedure_id, []):
                 score = (
-                    _cosine_similarity(query_vector, scored_chunk.vector)
-                    if query_vector
-                    else 1.0
+                    _cosine_similarity(query_vector, scored_chunk.vector) if query_vector else 1.0
                 )
                 scored.append((score, scored_chunk.chunk))
 
@@ -206,9 +200,7 @@ class RetrievalService:
         return RetrievalEvidence(
             procedure_id=resolved_procedure_id,
             procedure_name=(
-                PROCEDURE_DISPLAY_NAME.get(resolved_procedure_id)
-                if resolved_procedure_id
-                else None
+                PROCEDURE_DISPLAY_NAME.get(resolved_procedure_id) if resolved_procedure_id else None
             ),
             chunks=chunks,
             citations=list(seen_citations.values()),

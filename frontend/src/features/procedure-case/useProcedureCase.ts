@@ -16,7 +16,9 @@ import type {
   FeedbackContext,
   FeedbackReasonCode,
   FormFieldValue,
+  IntakeRequest,
   PersistedProcedureCaseState,
+  ReviewGate,
 } from "./procedureCase.types";
 
 function generateSessionId(): string {
@@ -74,35 +76,49 @@ export function useProcedureCase(initialMessage?: string, initialProcedureId?: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const selectStaticProcedure = useCallback((procedureId: string) => {
-    dispatch({ type: "SELECT_STATIC_PROCEDURE", procedureId });
+  const requestIntake = useCallback(async (request: IntakeRequest) => {
+    dispatch({ type: "INTAKE_REQUEST_STARTED" });
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    try {
+      const response = await postIntakeTurn(request, controller.signal);
+      dispatch({ type: "INTAKE_RESPONSE_RECEIVED", response });
+      return response;
+    } catch (err) {
+      dispatch({ type: "INTAKE_REQUEST_FAILED", kind: toApiFailureKind(err) });
+      return null;
+    } finally {
+      controllerRef.current = null;
+    }
   }, []);
+
+  const selectStaticProcedure = useCallback(
+    async (procedureId: string) => {
+      const { sessionId, sessionContext } = stateRef.current;
+      if (stateRef.current.isBusy) return;
+      await requestIntake({
+        session_id: sessionId,
+        message: "Người dùng chọn thủ tục từ danh sách MVP.",
+        session_context: sessionContext,
+        turn_type: "procedure_select",
+        selected_procedure_id: procedureId,
+      });
+    },
+    [requestIntake],
+  );
 
   const sendMessage = useCallback(async (rawText: string) => {
     const text = rawText.trim().slice(0, INPUT_MAX_LENGTH);
     if (!text || stateRef.current.isBusy) return;
 
     dispatch({ type: "SEND_MESSAGE", text });
-    dispatch({ type: "INTAKE_REQUEST_STARTED" });
-
-    const controller = new AbortController();
-    controllerRef.current = controller;
-    try {
-      const response = await postIntakeTurn(
-        {
-          session_id: stateRef.current.sessionId,
-          message: text,
-          session_context: stateRef.current.sessionContext,
-        },
-        controller.signal,
-      );
-      dispatch({ type: "INTAKE_RESPONSE_RECEIVED", response });
-    } catch (err) {
-      dispatch({ type: "INTAKE_REQUEST_FAILED", kind: toApiFailureKind(err) });
-    } finally {
-      controllerRef.current = null;
-    }
-  }, []);
+    await requestIntake({
+      session_id: stateRef.current.sessionId,
+      message: text,
+      session_context: stateRef.current.sessionContext,
+      turn_type: "free_text",
+    });
+  }, [requestIntake]);
 
   const fetchChecklist = useCallback(async () => {
     const { sessionId, sessionContext } = stateRef.current;
@@ -118,6 +134,7 @@ export function useProcedureCase(initialMessage?: string, initialProcedureId?: s
         {
           clarification_answers: sessionContext.clarification_answers,
           procedure_version: sessionContext.procedure_version ?? undefined,
+          session_context: sessionContext,
         },
         controller.signal,
       );
@@ -144,18 +161,72 @@ export function useProcedureCase(initialMessage?: string, initialProcedureId?: s
     void fetchChecklist();
   }, [state.flow, fetchChecklist]);
 
-  const confirmU1 = useCallback(() => dispatch({ type: "CONFIRM_U1" }), []);
+  const confirmU1 = useCallback(async () => {
+    const { sessionId, sessionContext } = stateRef.current;
+    if (stateRef.current.isBusy || !sessionContext.procedure_id) return;
+    await requestIntake({
+      session_id: sessionId,
+      message: "Người dùng xác nhận thủ tục trong phiên hiện tại.",
+      session_context: sessionContext,
+      turn_type: "review_acknowledgement",
+      review_gate_acknowledgement: "U1",
+    });
+  }, [requestIntake]);
   const rejectU1 = useCallback(() => dispatch({ type: "REJECT_U1" }), []);
 
-  const answerClarification = useCallback((questionId: string, value: string) => {
-    dispatch({ type: "SUBMIT_CLARIFICATION_ANSWER", questionId, value });
-  }, []);
+  const answerClarification = useCallback(async (questionId: string, value: string) => {
+    const { sessionId, sessionContext } = stateRef.current;
+    if (stateRef.current.isBusy) return;
+    await requestIntake({
+      session_id: sessionId,
+      message: "Người dùng trả lời câu hỏi làm rõ.",
+      session_context: sessionContext,
+      turn_type: "clarification_answer",
+      clarification_answer: { question_id: questionId, value },
+    });
+  }, [requestIntake]);
 
   const editClarificationAnswer = useCallback((questionId: string) => {
     dispatch({ type: "EDIT_CLARIFICATION_ANSWER", questionId });
   }, []);
 
-  const confirmU2 = useCallback(() => dispatch({ type: "CONFIRM_U2" }), []);
+  const acknowledgeReviewGate = useCallback(async (reviewGate: ReviewGate) => {
+    const { sessionId, sessionContext } = stateRef.current;
+    if (stateRef.current.isBusy || !sessionContext.procedure_id) return null;
+    dispatch({ type: "INTAKE_REQUEST_STARTED" });
+    const controller = new AbortController();
+    controllerRef.current = controller;
+    try {
+      const response = await postIntakeTurn(
+        {
+          session_id: sessionId,
+          message: "Người dùng xác nhận điểm review trong phiên hiện tại.",
+          session_context: sessionContext,
+          turn_type: "review_acknowledgement",
+          review_gate_acknowledgement: reviewGate,
+        },
+        controller.signal,
+      );
+      if (response.trust_state === "official_review_required") {
+        dispatch({ type: "INTAKE_RESPONSE_RECEIVED", response });
+      } else {
+        dispatch({ type: "SESSION_CONTEXT_UPDATED", sessionContext: response.proposed_session_context });
+      }
+      return response;
+    } catch (err) {
+      dispatch({ type: "INTAKE_REQUEST_FAILED", kind: toApiFailureKind(err) });
+      return null;
+    } finally {
+      controllerRef.current = null;
+    }
+  }, []);
+
+  const confirmU2 = useCallback(async () => {
+    const response = await acknowledgeReviewGate("U2");
+    if (response?.trust_state === "verified_guidance") {
+      dispatch({ type: "CONFIRM_U2" });
+    }
+  }, [acknowledgeReviewGate]);
 
   const updateFormField = useCallback((key: string, value: FormFieldValue) => {
     dispatch({ type: "UPDATE_FORM_FIELD", key, value });
@@ -174,6 +245,7 @@ export function useProcedureCase(initialMessage?: string, initialProcedureId?: s
           procedure_id: checklist.procedure_id,
           procedure_version: sessionContext.procedure_version ?? checklist.procedure_version ?? undefined,
           form_data: formDraft,
+          session_context: sessionContext,
         },
         controller.signal,
       );
@@ -185,7 +257,12 @@ export function useProcedureCase(initialMessage?: string, initialProcedureId?: s
     }
   }, []);
 
-  const confirmU3 = useCallback(() => dispatch({ type: "CONFIRM_U3" }), []);
+  const confirmU3 = useCallback(async () => {
+    const response = await acknowledgeReviewGate("U3");
+    if (response?.trust_state === "verified_guidance") {
+      dispatch({ type: "CONFIRM_U3" });
+    }
+  }, [acknowledgeReviewGate]);
 
   const cancelRequest = useCallback(() => {
     controllerRef.current?.abort();
@@ -230,7 +307,7 @@ export function useProcedureCase(initialMessage?: string, initialProcedureId?: s
     if (mountHandoffDone.current) return;
     mountHandoffDone.current = true;
     if (initialProcedureId) {
-      selectStaticProcedure(initialProcedureId);
+      void selectStaticProcedure(initialProcedureId);
     } else if (initialMessage) {
       void sendMessage(initialMessage);
     }
