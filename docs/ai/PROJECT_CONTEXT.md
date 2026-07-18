@@ -62,6 +62,10 @@ Kết quả quy phạm chỉ có ba trust state:
 - D-006 vẫn đề xuất RAG/knowledge release, provider-neutral LLM, approved data adapter, PII boundary hoàn chỉnh, widget contract và topology deploy.
 - D-011 (`local-20260718-rag-llm-guardrail`, `Proposed`, cần peer confirmation) hiện thực RAG in-process trên `data/Data_DVC`, LLM Gateway OpenAI-compatible với offline fallback và PII Guard session-scoped, cắm vào port/adapter của D-006 qua `procedure_data_mode=rag`, `rag_mode=rag`, `llm_mode=gateway`. Mặc định (`fixture`/`disabled`) vẫn không đổi. Đây là evidence runtime đầu tiên cho 3 procedure pack MVP nhưng **chưa phải K1/approved chính thức** — checklist/steps được parser deterministic từ nguồn thô, chưa qua human review nội dung pháp lý.
 - D-013 khóa ranh giới đó trong runtime: chỉ nạp candidate có đúng mã `1.001193`, `1.004222`, `1.001612`; gắn `needs_review`, để `last_verified_at=null`, không phát verdict precheck và khóa `/v1/rag/search`/`answer` legacy mặc định. Review kỹ thuật của coding agent không thay thế K1 human/legal review.
+- Task `local-20260718-k1-review-package` bổ sung CLI tạo candidate manifest,
+  provenance/checksum report, human-review checklist và validator fail-closed cho
+  đúng ba source canonical. Gói thật hiện vẫn `needs_review`; chưa có manifest
+  human-approved hoặc runtime release.
 
 ### Tiêu chí thành công đề xuất
 
@@ -96,7 +100,7 @@ Kết quả quy phạm chỉ có ba trust state:
 | Frontend web | Next.js scaffold trong `frontend/`; UI product/widget chưa hoàn tất | D-005 Accepted; D-008 Accepted |
 | Backend/API | FastAPI integration foundation trong `backend/`; sáu routes, typed trust/error metadata, deterministic rules và dev fixture có sẵn; adapter RAG/LLM/PII Guard đã cắm vào port qua `procedure_data_mode=rag` | D-005 Accepted; D-006 Proposed; D-011 Proposed |
 | AI/model/provider | LLM Gateway OpenAI-compatible (`llm_mode=gateway`), đọc `AI_*` và fallback alias `OPENAI_*`; fallback deterministic khi thiếu key; provider thật vẫn chưa có smoke evidence trong task này | D-006 Proposed; D-011 Proposed; D-013 Accepted |
-| Data/RAG | RAG in-process chỉ nạp ba source canonical thành candidate `needs_review`; không có `last_verified_at` và không được cấp `verified_guidance` trước K1. Legacy clean-RAG bị khóa mặc định bằng `LEGACY_RAG_ENABLED=false` | D-006 Proposed; D-011 Proposed; D-013 Accepted |
+| Data/RAG | RAG in-process chỉ nạp ba source canonical thành candidate `needs_review`; tooling K1 review-ready đã có nhưng chưa có human-approved release. Không có `last_verified_at` và không được cấp `verified_guidance` trước K1. Legacy clean-RAG bị khóa mặc định bằng `LEGACY_RAG_ENABLED=false` | D-006 Proposed; D-011 Proposed; D-013 Accepted |
 | Deploy/demo runtime | Chưa provision URL, hosting, secret hoặc CD | D-006 Proposed |
 | Application checks | Lệnh bootstrap có sẵn; lint/test/build ứng dụng cần được xác minh theo Task Record | D-005 / task follow-up |
 
