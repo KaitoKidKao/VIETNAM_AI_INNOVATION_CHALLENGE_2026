@@ -11,7 +11,6 @@ from typing import Any, Iterable
 
 from .chunking import EvidenceChunk
 
-
 RETRIEVER_VERSION = "vaic-keyword-retriever-v1"
 FAIL_CLOSED_REASON = "official_review_required"
 
@@ -66,9 +65,7 @@ class RetrievalResult:
 def _fold(text: str) -> str:
     decomposed = unicodedata.normalize("NFD", text.casefold())
     without_marks = "".join(
-        character
-        for character in decomposed
-        if unicodedata.category(character) != "Mn"
+        character for character in decomposed if unicodedata.category(character) != "Mn"
     )
     return without_marks.replace("đ", "d")
 
@@ -93,7 +90,13 @@ class ApprovedSourceRegistry:
     def __init__(self, chunks: Iterable[EvidenceChunk]) -> None:
         self._chunks = tuple(chunks)
         self._approved = tuple(
-            chunk for chunk in self._chunks if chunk.review_status == "approved"
+            chunk
+            for chunk in self._chunks
+            if (
+                chunk.review_status == "approved"
+                and bool(chunk.source_refs)
+                and chunk.jurisdiction != "unknown"
+            )
         )
 
     @property
@@ -120,9 +123,7 @@ class ApprovedSourceRegistry:
     ) -> tuple[EvidenceChunk, ...]:
         chunks = self._approved
         if procedure_id is not None:
-            chunks = tuple(
-                chunk for chunk in chunks if procedure_id in chunk.procedure_ids
-            )
+            chunks = tuple(chunk for chunk in chunks if procedure_id in chunk.procedure_ids)
         if jurisdiction is not None:
             chunks = tuple(chunk for chunk in chunks if chunk.jurisdiction == jurisdiction)
         if effective_on is not None:
@@ -175,9 +176,9 @@ class KeywordRetriever:
             for term, query_weight in query_counts.items():
                 if term not in terms:
                     continue
-                inverse_document_frequency = math.log(
-                    (1 + total) / (1 + document_frequency[term])
-                ) + 1.0
+                inverse_document_frequency = (
+                    math.log((1 + total) / (1 + document_frequency[term])) + 1.0
+                )
                 score += query_weight * terms[term] * inverse_document_frequency
             if score <= 0:
                 continue

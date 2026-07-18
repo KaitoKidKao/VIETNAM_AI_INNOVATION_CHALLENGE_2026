@@ -87,7 +87,10 @@ def test_recommend_and_intake_support_accented_vietnamese(client: TestClient) ->
     )
     intake = client.post(
         "/v1/intake/turn",
-        json={"session_id": "synthetic-session", "message": "Tôi muốn đăng ký thường trú"},
+        json={
+            "session_id": "synthetic-session",
+            "message": "Tôi muốn đăng ký thường trú",
+        },
     )
 
     assert recommend.status_code == 200
@@ -111,12 +114,16 @@ def test_fixture_checklist_and_precheck_fail_closed(client: TestClient) -> None:
     assert checklist.status_code == 200
     assert checklist.json()["fixture_mode"] is True
     assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["procedure_card"] is None
+    assert checklist.json()["form_schema"] == {}
     assert validation.status_code == 200
     assert validation.json()["verdict"] is None
     assert validation.json()["trust_state"] == "official_review_required"
 
 
-def test_unknown_procedure_and_invalid_body_use_safe_error_envelope(client: TestClient) -> None:
+def test_unknown_procedure_and_invalid_body_use_safe_error_envelope(
+    client: TestClient,
+) -> None:
     unknown = client.post(
         "/v1/applications/validate",
         json={"procedure_id": "unknown", "form_data": {}},
@@ -174,22 +181,167 @@ def test_approved_adapter_enables_deterministic_precheck() -> None:
     assert valid.json()["findings"] == []
 
 
-def test_openapi_exposes_exactly_six_public_routes(client: TestClient) -> None:
+def test_prototype_intake_actions_return_stateless_journey_read_models() -> None:
+    settings = Settings(app_env="test", procedure_data_mode="fixture")
+    container = build_container(settings)
+    container.procedure_repository = ApprovedProcedureRepository(approved_birth_pack())
+    container.recommendation_provider = FixtureRecommendationProvider()
+    prototype_client = TestClient(create_app(settings=settings, container=container))
+
+    selected = prototype_client.post(
+        "/v1/intake/turn",
+        json={
+            "session_id": "synthetic-session",
+            "message": "Tôi chọn đăng ký khai sinh",
+            "turn_type": "procedure_select",
+            "selected_procedure_id": "dang-ky-khai-sinh",
+        },
+    )
+    assert selected.status_code == 200
+    selected_body = selected.json()
+    assert selected_body["trust_state"] == "need_more_information"
+    assert selected_body["journey"]["total_steps"] == 5
+    assert selected_body["next_action"]["code"] == "answer_clarifications"
+
+    answered = prototype_client.post(
+        "/v1/intake/turn",
+        json={
+            "session_id": "synthetic-session",
+            "message": "Xác nhận",
+            "turn_type": "clarification_answer",
+            "clarification_answer": {
+                "question_id": "fixture-confirm-scenario",
+                "value": "Xác nhận",
+            },
+            "session_context": selected_body["proposed_session_context"],
+        },
+    )
+    assert answered.status_code == 200
+    answered_body = answered.json()
+    assert answered_body["trust_state"] == "verified_guidance"
+    assert answered_body["procedure_card"]["procedure_id"] == "dang-ky-khai-sinh"
+    assert answered_body["confirmed_facts"][0]["key"] == "fixture-confirm-scenario"
+    assert answered_body["next_action"]["code"] == "confirm_procedure"
+
+    checklist = prototype_client.post(
+        "/v1/procedures/dang-ky-khai-sinh/checklist",
+        json={
+            "session_context": answered_body["proposed_session_context"],
+            "clarification_answers": {"fixture-confirm-scenario": "Xác nhận"},
+        },
+    )
+    assert checklist.status_code == 200
+    assert checklist.json()["procedure_card"]["name"]
+    assert checklist.json()["journey"]["steps"][0]["status"] == "complete"
+
+
+def test_intake_rejects_unknown_fields_and_non_pending_answers(
+    client: TestClient,
+) -> None:
+    unknown_field = client.post(
+        "/v1/procedures/recommend",
+        json={"need_text": "khai sinh", "unexpected": "not accepted"},
+    )
+    non_pending = client.post(
+        "/v1/intake/turn",
+        json={
+            "session_id": "synthetic-session",
+            "message": "Câu trả lời",
+            "turn_type": "clarification_answer",
+            "clarification_answer": {"question_id": "unknown", "value": "value"},
+            "session_context": {"procedure_id": "dang-ky-khai-sinh"},
+        },
+    )
+
+    assert unknown_field.status_code == 422
+    assert unknown_field.json()["error"]["code"] == "request_validation_failed"
+    assert non_pending.status_code == 422
+    assert non_pending.json()["error"]["code"] == "clarification_question_not_pending"
+
+
+def test_openapi_exposes_base_and_rag_public_routes(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
 
     assert set(paths) == {
+        "/",
         "/health",
         "/v1/procedures",
         "/v1/procedures/{procedure_id}/checklist",
         "/v1/procedures/recommend",
         "/v1/intake/turn",
         "/v1/applications/validate",
+        "/v1/rag/search",
+        "/v1/rag/answer",
     }
 
 
 def test_production_rejects_dev_fixture() -> None:
     with pytest.raises(RuntimeError, match="fixture"):
         create_app(Settings(app_env="production", procedure_data_mode="fixture"))
+
+
+def test_production_disabled_is_degraded_and_never_exposes_fixture_data() -> None:
+    settings = Settings(
+        app_env="production",
+        procedure_data_mode="disabled",
+        rag_mode="disabled",
+        llm_mode="disabled",
+        cors_allowed_origins="",
+        rate_limit_enabled=True,
+    )
+    production_client = TestClient(create_app(settings=settings))
+
+    health = production_client.get("/health")
+    catalog = production_client.get("/v1/procedures")
+    recommendation = production_client.post(
+        "/v1/procedures/recommend", json={"need_text": "Tôi muốn đăng ký khai sinh"}
+    )
+    intake = production_client.post(
+        "/v1/intake/turn",
+        json={
+            "session_id": "production-disabled-test",
+            "message": "Tôi muốn đăng ký khai sinh",
+        },
+    )
+    checklist = production_client.post(
+        "/v1/procedures/dang-ky-khai-sinh/checklist",
+        json={"clarification_answers": {}},
+    )
+    validation = production_client.post(
+        "/v1/applications/validate",
+        json={"procedure_id": "dang-ky-khai-sinh", "form_data": {}},
+    )
+
+    assert health.status_code == 200
+    assert health.json()["status"] == "degraded"
+    assert health.json()["environment"] == "production"
+    assert health.json()["capabilities"] == {
+        "procedure_data": "disabled",
+        "rag": "disabled",
+        "llm": "disabled",
+    }
+    assert catalog.status_code == 200
+    assert len(catalog.json()) == 3
+    assert all(item["review_status"] == "unavailable" for item in catalog.json())
+    assert all(item["fixture_mode"] is False for item in catalog.json())
+    assert recommendation.json()["candidates"] == []
+    assert recommendation.json()["trust_state"] == "need_more_information"
+    assert intake.json()["trust_state"] == "need_more_information"
+    assert intake.json()["fixture_mode"] is False
+    assert intake.json()["detected_procedure_id"] is None
+    assert intake.json()["procedure"] is None
+    assert intake.json()["clarifying_questions"] == []
+    assert intake.json()["journey"] is None
+    assert intake.json()["procedure_card"] is None
+    assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["fixture_mode"] is False
+    assert checklist.json()["required_documents"] == []
+    assert checklist.json()["steps"] == []
+    assert checklist.json()["journey"] is None
+    assert checklist.json()["procedure_card"] is None
+    assert validation.json()["trust_state"] == "official_review_required"
+    assert validation.json()["verdict"] is None
+    assert validation.json()["journey"] is None
 
 
 def test_request_limit_and_rate_limit_have_safe_errors(client: TestClient) -> None:

@@ -19,13 +19,16 @@ Decision Log lưu các quyết định liên lane hoặc khó đảo ngược: s
 | D-003 | Accepted | Impeccable CLI advisory portable, không native skill/hook | `local-20260717-impeccable-cli` | 2026-07-17 |
 | D-004 | Accepted | Prompt Intake Gate trước task thực chất | `local-20260717-prompt-intake-gate` | 2026-07-17 |
 | D-005 | Accepted | Scaffold FastAPI backend và Next.js frontend | `local-20260717-scaffold-vaic` | 2026-07-17 |
-| D-006 | Proposed | Trust/RAG architecture, data governance, API maturity và deploy topology | `local-20260717-challenge-proposal` | 2026-07-17 |
+| D-006 | Accepted | Trust/RAG architecture, data governance, API maturity và deploy topology | `local-20260717-challenge-proposal` | 2026-07-17 |
 | D-007 | Accepted | Ba procedure pack MVP, pack thứ ba là thành lập hộ kinh doanh | `local-20260717-change-third-mvp` | 2026-07-17 |
 | D-008 | Accepted | Web-first delivery và portal integration pathway | `local-20260717-web-first-portal-scope` | 2026-07-17 |
 | D-009 | Accepted | AI Log prompt-only, provider-neutral và liên kết theo commit | `local-20260717-ai-log` | 2026-07-17 |
 | D-010 | Proposed | Fast merge gate và release artifact provider-neutral | `local-20260718-ci-cd-optimization` | 2026-07-18 |
-| D-011 | Accepted | Structure-aware chunking contract cho ba procedure pack MVP | `local-20260718-chunking-phase-0`, `local-20260718-chunking-phase-1` | 2026-07-18 |
-| D-012 | Accepted | Ngoại lệ bảng màu đỏ-vàng cho landing page marketing, tách biệt VNGov Copilot Navy & Orange | `local-20260718-landing-page-red-gold` | 2026-07-18 |
+| D-011 | Proposed | RAG in-process (không pgvector), LLM Gateway OpenAI-compatible với offline fallback, PII Guard regex in-memory, tích hợp vào CopilotService/ports adapter | `local-20260718-rag-llm-guardrail` | 2026-07-18 |
+| D-012 | Accepted | Cloud Run backend demo foundation, production-disabled | `local-20260718-gcp-backend-deploy` | 2026-07-18 |
+| D-013 | Accepted | Prototype read models cho sáu route base và hai route RAG additive | `local-20260718-prototype-api-contract` | 2026-07-18 |
+| D-014 | Accepted | Structure-aware chunking contract cho ba procedure pack MVP | `local-20260718-chunking-phase-0`, `local-20260718-chunking-phase-1` | 2026-07-18 |
+| D-015 | Accepted | Ngoại lệ bảng màu đỏ-vàng cho landing page marketing, tách biệt VNGov Copilot Navy & Orange | `local-20260718-landing-page-red-gold` | 2026-07-18 |
 
 ---
 
@@ -117,24 +120,24 @@ Nếu một khung không chạy được, dùng standalone UI hoặc mock API ch
 
 ## D-006 — Trust/RAG architecture, data governance, API maturity và deploy topology
 
-- **Trạng thái:** Proposed
+- **Trạng thái:** Accepted
 - **Ngày:** 2026-07-17
 - **Người đề xuất:** Task `local-20260717-challenge-proposal`
 - **Phạm vi:** API / data / deploy / demo
 - **Task Record:** `local-20260717-challenge-proposal`
-- **Peer xác nhận:** `TBD`; hai peer trong scope freeze.
+- **Peer xác nhận:** `hdtruong802` (user), 2026-07-18. Nếu task diễn ra trong scope freeze, vẫn cần peer thứ hai theo `TEAM_PROTOCOL.md`.
 
 ### Bối cảnh
 
 Ba capability của đề bài cần giao tiếp tự nhiên nhưng phải tạo kết quả kiểm chứng được. D-005 đã tạo code baseline, nhưng không giải quyết nguồn pháp lý, data release, grounding, PII boundary, external model, observability, widget/portal contract hay deploy.
 
-### Quyết định đề xuất
+### Quyết định đã chấp thuận
 
-Đề xuất kiến trúc web-first gồm standalone UI + iframe/widget, trust/orchestration backend, approved structured procedure packs, hybrid keyword/vector retrieval, deterministic rules và provider-neutral LLM adapter. Procedure Pack cần source/effective date/review/checksum; mọi response quy phạm cần `procedure_version`, `source_refs`, `last_verified_at` và một trust state: `verified_guidance`, `need_more_information`, `official_review_required`.
+Chấp thuận kiến trúc web-first gồm standalone UI + iframe/widget, trust/orchestration backend, approved structured procedure packs, hybrid keyword/vector retrieval, deterministic rules và provider-neutral LLM adapter. Procedure Pack cần source/effective date/review/checksum; mọi response quy phạm cần `procedure_version`, `source_refs`, `last_verified_at` và một trust state: `verified_guidance`, `need_more_information`, `official_review_required`.
 
 LLM chỉ hỏi làm rõ/diễn đạt/giải thích evidence đã có. Nó không quyết định hồ sơ hợp lệ, không tạo giấy tờ/rule ngoài pack approved và không nhận raw direct identifiers. PII Guard phải minimize/tokenize trước model call; token map session-only, không vào disk, log, vector index hay `CaseSnapshot`. Deterministic Rule Engine là nguồn duy nhất tạo field/cross-field findings.
 
-Curated acquisition, checksum, K1 approval, release/rollback và K2 re-review là gate trước runtime knowledge. D-006 đề xuất, nhưng chưa chọn/chưa provision, storage/vector database, model provider, hosting hoặc CD cụ thể.
+Curated acquisition, checksum, K1 approval, release/rollback và K2 re-review là gate trước runtime knowledge. D-006 chấp thuận kiến trúc mục tiêu và các gate; nó **không** tự chọn hoặc provision storage/vector database, model provider, hosting hay CD cụ thể.
 
 ### Hệ quả và kiểm chứng
 
@@ -228,7 +231,49 @@ Revert workflow, guard helper và release-manifest changes để quay về repos
 
 ---
 
-## D-011 — Structure-aware chunking contract cho ba procedure pack MVP
+## D-011 — RAG in-process, LLM Gateway OpenAI-compatible, PII Guard regex in-memory
+
+- **Trạng thái:** Proposed
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** Cursor theo yêu cầu người dùng hiện tại
+- **Phạm vi:** API | dependency | data | process
+- **Task Record:** `local-20260718-rag-llm-guardrail`
+- **Publish (tùy chọn):** chưa publish
+- **Peer xác nhận:** Chưa có peer khác online tại thời điểm thực hiện (roster `TEAM.md` còn `TBD`); cần một peer xác nhận trước khi coi là `Accepted`, đặc biệt nếu bước vào 6 giờ cuối.
+
+### Bối cảnh
+
+`docs/proposal.md` mục 5 đề xuất kiến trúc RAG/Knowledge, LLM Gateway provider-neutral và PII Guard, nhưng đánh dấu framework/model provider/database là `TBD`. `PROJECT_CONTEXT.md` đã chốt `AI/model/provider: Provider-neutral adapter` và `Data/storage: Neon Postgres (pgvector)` ở trạng thái `Proposed` (chưa `Accepted`, chưa provision). Cần triển khai đủ 3 năng lực để demo end-to-end trong thời gian hackathon còn lại mà không chờ hạ tầng Neon/pgvector hoặc secret model provider thật.
+
+### Lựa chọn đã cân nhắc
+
+1. Chờ Neon/pgvector + provider thật được provision trước khi code — an toàn về kiến trúc dài hạn nhưng rủi ro P0 "demo không ổn định" nếu hackathon hết giờ trước khi có infra.
+2. Dùng thư viện vector/ML nặng (`numpy`/`scikit-learn`/`sentence-transformers`) cho retrieval — chất lượng ngữ nghĩa tốt hơn nhưng vi phạm rủi ro P0 đã ghi trong `PROJECT_CONTEXT.md` ("không phụ thuộc thư viện native nặng") và tăng thời gian cài đặt/build trên máy giám khảo.
+3. RAG in-process bằng pure-Python lexical/TF-IDF hybrid trên `data/Data_DVC` (dataset thật từ nguồn thủ tục hành chính), LLM Gateway dùng client `openai` (đã có trong `requirements.txt`) trỏ `AI_BASE_URL` để provider-neutral, có fallback deterministic khi thiếu `AI_API_KEY`; PII Guard bằng regex + dict in-memory theo session, không dùng KMS/Vault.
+
+### Quyết định
+
+Chọn phương án 3. Cụ thể:
+
+- **RAG:** Structured store nạp `data/Data_DVC/*.txt`, lọc theo 3 procedure MVP bằng khớp `Tên thủ tục`/từ khóa; retrieval hybrid = keyword filter + lexical term-overlap scoring (không numpy/sklearn); trả về evidence kèm `source_ref`, `last_verified_at` (ngày source freeze), `confidence`; dưới ngưỡng confidence hoặc ngoài 3 pack => `official_review_required`. Không index PII, session hay case memory.
+- **LLM:** `LLMGateway` dùng `openai` SDK, cấu hình qua `AI_PROVIDER/AI_MODEL/AI_API_KEY/AI_BASE_URL` (đã có trong `.env.example`); system prompt ép model chỉ dùng evidence được cung cấp, chỉ trả JSON structured (intent/clarification/explanation), không tự quyết định checklist/finding. Khi thiếu `AI_API_KEY`, gateway dùng fallback templating deterministic (không gọi model, không bịa nội dung quy phạm) để demo vẫn chạy được offline.
+- **Guardrail:** `PIIGuard` regex nhận diện họ tên/số CCCD/SĐT/địa chỉ chi tiết, tokenize trước khi đưa vào LLM, map token chỉ lưu in-memory theo `session_id` với TTL phiên, không log/DB/vector.
+- **Tích hợp:** Sau khi `local-20260717-challenge-proposal`/`local-20260718-ci-cd-optimization` refactor backend sang kiến trúc hexagonal (`app/ports.py` + `AppContainer` + `CopilotService`), D-011 hiện thực RAG/LLM bằng adapter mới (`app/adapters/rag_llm.py`) implement `ProcedureRepository`/`RecommendationProvider`/`RetrievalProvider`/`LLMProvider` thay cho bản `Disabled*`; kích hoạt qua `procedure_data_mode=rag`, `rag_mode=rag`, `llm_mode=gateway`. `CopilotService`/`TrustPolicy`/`RuleEngine` gốc của D-006 giữ nguyên, không tạo `TrustPolicy` riêng.
+- Không đổi public REST schema hiện có (`ARCHITECTURE.md`); không thêm cột DB hay service ngoài.
+
+### Hệ quả và kiểm chứng
+
+- Chạy được hoàn toàn local, không cần Neon/pgvector hay API key thật; khi có provider thật chỉ cần set env, không đổi code.
+- Cần `pytest backend/tests` cho PII Guard tokenize/detokenize, retrieval trên 3 pack, adapter mới và trust policy fail-closed.
+- Khi Neon/pgvector hoặc provider thật được Decision riêng chấp thuận, migration retrieval sang pgvector là thay adapter `RetrievalProvider`, không đổi `app/ports.py` contract.
+
+### Rollback / fallback
+
+Nếu retrieval lexical không đủ chất lượng cho demo, đặt lại `procedure_data_mode=fixture`/`rag_mode=disabled`/`llm_mode=disabled` trong `Settings` để `AppContainer` quay về adapter fixture/disabled có sẵn, không cần đổi code service. Nếu LLM provider lỗi/timeout, gateway trả fallback deterministic và `TrustPolicy` chuyển `official_review_required` thay vì chặn toàn bộ luồng.
+
+---
+
+## D-014 — Structure-aware chunking contract cho ba procedure pack MVP
 
 - **Trạng thái:** Accepted
 - **Ngày:** 2026-07-18
@@ -242,7 +287,7 @@ Revert workflow, guard helper và release-manifest changes để quay về repos
 
 Corpus local có 5.652 file TXT nhưng raw document không tự động là nguồn đã duyệt. Mẫu phân tầng cho thấy tài liệu có cấu trúc field/bullet và nhiều dòng dài, nên fixed-size character chunking có nguy cơ cắt giữa trường, claim và căn cứ pháp lý. Proposal yêu cầu approved-only RAG, metadata hiệu lực, K1/K2 review và fail-closed; runtime hiện chưa có ingestion/chunking contract chung.
 
-Proposal đang tham chiếu D-006 đến D-008 nhưng các entry đó chưa có trong Decision Log hiện tại. D-011 được dùng để tránh chiếm các ID đã được tham chiếu (bao gồm D-009 vốn đã dùng cho AI Log); D-006 đến D-008 được giữ reserved và không tái sử dụng. Việc phục hồi nội dung lịch sử của các Decision này là task tài liệu riêng, không chặn fixture-only Phase 1.
+Proposal đang tham chiếu D-006 đến D-008 nhưng các entry đó chưa có trong Decision Log hiện tại tại thời điểm đề xuất; các entry đó nay đã được publish (xem trên). Việc phục hồi nội dung lịch sử của các Decision này là task tài liệu riêng, không chặn fixture-only Phase 1.
 
 ### Lựa chọn đã cân nhắc
 
@@ -276,7 +321,38 @@ Không sửa raw corpus. Mọi parsed/chunk/index artifact có thể bỏ và bu
 
 ---
 
-## D-012 — Ngoại lệ bảng màu đỏ-vàng cho landing page marketing
+## D-013 — Prototype read models và RAG routes additive
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-18
+- **Người đề xuất:** hdtruong802 / Codex
+- **Phạm vi:** API / demo / process
+- **Task Record:** `local-20260718-prototype-api-contract`
+- **Peer xác nhận:** user — explicit approval “thực hiện plan”
+
+### Bối cảnh
+
+Prototype web cần hiển thị luồng chat, tiến trình năm bước, procedure card, xác nhận thông tin và hành động kế tiếp. Sáu route `/v1` đã có là đủ boundary; chỉ thiếu read model và action stateless để FE tích hợp nhất quán.
+
+### Quyết định
+
+Mở rộng **additive** DTO của sáu route base với journey năm bước, procedure card, confirmed facts, review/next action và turn type cho intake. Đồng thời công khai hai route RAG additive: `/v1/rag/search` và `/v1/rag/answer`; chúng chỉ trả evidence approved hoặc diễn giải grounded có citation, và fail closed khi thiếu evidence/key hoặc provider lỗi. `SessionContext` là structured state do browser giữ và gửi lại; backend không lưu transcript, form draft hay PII. Input DTO từ client dùng `extra=forbid`.
+
+Không thêm route, auth, upload/OCR, support ticket, portal integration, database, dependency hoặc provider. Deterministic Rule Engine vẫn là nguồn duy nhất tạo finding/verdict. Nội dung hướng dẫn/card/checklist chỉ được hiển thị đầy đủ khi Procedure Pack được verified; fixture hoặc runtime disabled giữ fail-closed.
+
+### Hệ quả và kiểm chứng
+
+- FE tích hợp trực tiếp bằng OpenAPI, không cần endpoint prototype riêng.
+- Context chỉ chứa procedure/version, câu trả lời clarification, document-review ID và review-gate acknowledgement; không chứa lịch sử chat hoặc form data.
+- Test contract phải chứng minh strict input, action flow, approved pack render và fixture/disabled không phát guidance.
+
+### Rollback / fallback
+
+Các trường response mới là optional/additive nên FE có thể bỏ qua. Nếu adapter/pack không sẵn sàng, response dùng `official_review_required` hoặc `need_more_information`, không fallback sang fact fixture.
+
+---
+
+## D-015 — Ngoại lệ bảng màu đỏ-vàng cho landing page marketing
 
 - **Trạng thái:** Accepted
 - **Ngày:** 2026-07-18
@@ -297,17 +373,19 @@ Trang chủ marketing (`frontend/src/app/page.tsx`, khối `view === "landing"`)
 
 ### Quyết định
 
-Chọn phương án 3. Landing page (Header, Hero, 6 dịch vụ, Dịch vụ nổi bật + Cập nhật, Lợi ích, Footer) dùng token `gov-red`/`gov-gold`/`gov-cream` mới trong `frontend/src/app/globals.css` và ảnh thật có sẵn trong `frontend/src/image/` (quốc huy, logo, nền trống đồng/hoa sen). Giao diện Copilot (`view === "copilot"`, `ChecklistSidebar.tsx`) không đổi, vẫn theo `docs/DESIGN.md` Navy & Orange.
+Chọn phương án 3. Landing page (Header, Hero, 6 dịch vụ, Dịch vụ nổi bật + Cập nhật, Lợi ích, Footer) dùng token `gov-red`/`gov-gold`/`gov-cream` mới trong `frontend/src/app/globals.css` và ảnh thật có sẵn trong `frontend/src/image/` (quốc huy, logo, nền trống đồng/hoa sen). Giao diện Copilot (`view === "copilot"`) không đổi, vẫn theo `docs/DESIGN.md` Navy & Orange.
+
+Bổ sung ngày 2026-07-18: thêm scoped token `--portal-page`/`--portal-surface`/`--portal-border`/`--portal-text`/`--portal-muted`/`--portal-red`/`--portal-red-dark`/`--portal-orange`/`--portal-gold` dưới class `.portal-home` (không sửa `:root`/`@theme`), và một `.portal-container` utility dùng chung cho mọi section của landing page, để khớp sát hơn ảnh tham chiếu gốc mà không đổi token Copilot.
 
 ### Hệ quả và kiểm chứng
 
 - `docs/DESIGN.md` không cần cập nhật vì phạm vi ngoại lệ chỉ giới hạn ở landing page, không phải toàn bộ design system.
-- `npm run typecheck` và `npm run lint` đã chạy sau khi tách component; không có lỗi mới phát sinh từ thay đổi này (lint warnings còn lại thuộc code Copilot cũ, ngoài phạm vi).
-- Đã xác minh bằng `next dev` rằng landing page compile và render đúng nội dung.
+- `npm run typecheck`, `npm run build` đã chạy sau các đợt chỉnh sửa; không có lỗi mới phát sinh từ thay đổi này (một lint warning tiền tồn tại trong `layout.tsx`, ngoài phạm vi).
+- Đã xác minh bằng `next dev` rằng landing page compile và render đúng nội dung, kể cả sau đợt refine footer/hero/benefits ngày 2026-07-18.
 
 ### Rollback / fallback
 
-Xoá token `gov-*` khỏi `globals.css` và revert các component trong `frontend/src/app/components/landing/` về bản Navy & Orange trước đó nếu cần đồng bộ lại với `docs/DESIGN.md`.
+Xoá token `gov-*`/`portal-*` khỏi `globals.css` và revert các component trong `frontend/src/app/components/landing/` về bản Navy & Orange trước đó nếu cần đồng bộ lại với `docs/DESIGN.md`.
 
 ---
 
