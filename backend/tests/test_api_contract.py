@@ -42,6 +42,14 @@ def approved_birth_pack() -> ProcedurePack:
         rule.model_copy(update={"source_ref_ids": [official_source.ref_id]})
         for rule in fixture.validation_rules
     ]
+    required_documents = [
+        document.model_copy(update={"source_ref_ids": [official_source.ref_id]})
+        for document in fixture.required_documents
+    ]
+    optional_documents = [
+        document.model_copy(update={"source_ref_ids": [official_source.ref_id]})
+        for document in fixture.optional_documents
+    ]
     return fixture.model_copy(
         update={
             "version": "approved-test-v1",
@@ -50,6 +58,8 @@ def approved_birth_pack() -> ProcedurePack:
             "source_refs": [official_source],
             "last_verified_at": date.today(),
             "validation_rules": rules,
+            "required_documents": required_documents,
+            "optional_documents": optional_documents,
         }
     )
 
@@ -180,6 +190,42 @@ def test_approved_adapter_enables_deterministic_precheck() -> None:
     assert valid.status_code == 200
     assert valid.json()["verdict"] == "pass_preliminary"
     assert valid.json()["findings"] == []
+
+
+def test_candidate_source_exposes_cited_checklist_but_keeps_precheck_closed() -> None:
+    settings = Settings(app_env="test", procedure_data_mode="rag", rag_mode="disabled")
+    container = build_container(settings)
+    candidate_pack = approved_birth_pack().model_copy(
+        update={
+            "version": "candidate-test-v1",
+            "review_status": ReviewStatus.NEEDS_REVIEW,
+            "last_verified_at": None,
+        }
+    )
+    container.procedure_repository = ApprovedProcedureRepository(candidate_pack)
+    candidate_client = TestClient(create_app(settings=settings, container=container))
+
+    checklist = candidate_client.post(
+        "/v1/procedures/dang-ky-khai-sinh/checklist",
+        json={"clarification_answers": {}},
+    )
+    validation = candidate_client.post(
+        "/v1/applications/validate",
+        json={"procedure_id": "dang-ky-khai-sinh", "form_data": {}},
+    )
+
+    assert checklist.status_code == 200
+    assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["fixture_mode"] is False
+    assert checklist.json()["source_refs"]
+    assert checklist.json()["required_documents"]
+    assert all(item["source_ref_ids"] for item in checklist.json()["required_documents"])
+    assert checklist.json()["steps"] == []
+    assert checklist.json()["form_schema"] == {}
+    assert checklist.json()["procedure_card"] is None
+    assert validation.status_code == 200
+    assert validation.json()["trust_state"] == "official_review_required"
+    assert validation.json()["verdict"] is None
 
 
 def test_openapi_exposes_current_public_routes(client: TestClient) -> None:
