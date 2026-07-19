@@ -1,6 +1,6 @@
 "use client";
 
-import type { FeedbackReasonCode, FlowState, TrustMetadata, ValidationResponse } from "../procedureCase.types";
+import type { FeedbackReasonCode, Finding, FlowState, TrustMetadata, ValidationResponse } from "../procedureCase.types";
 import FindingCard from "./FindingCard";
 import PreliminaryPassState from "./PreliminaryPassState";
 
@@ -9,10 +9,15 @@ interface PrecheckPanelProps {
   isBusy: boolean;
   canRunPrecheck: boolean;
   lastValidationResponse: ValidationResponse | null;
+  visibleFindings: Finding[];
+  fieldLabels: Record<string, string>;
   trustMetadata: TrustMetadata | null;
   onRunPrecheck: () => void;
   onConfirmU3: () => void;
   onFeedback: (vote: "up" | "down", reason?: FeedbackReasonCode, note?: string) => void;
+  hasConfirmedU3?: boolean;
+  procedureId?: string;
+  onStartNew?: () => void;
 }
 
 export default function PrecheckPanel({
@@ -20,10 +25,15 @@ export default function PrecheckPanel({
   isBusy,
   canRunPrecheck,
   lastValidationResponse,
+  visibleFindings,
+  fieldLabels,
   trustMetadata,
   onRunPrecheck,
   onConfirmU3,
   onFeedback,
+  hasConfirmedU3 = false,
+  procedureId,
+  onStartNew,
 }: PrecheckPanelProps) {
   return (
     <div className="bg-[var(--vg-surface)] border border-[var(--vg-border)] rounded-xl p-5 space-y-4 text-left">
@@ -48,8 +58,12 @@ export default function PrecheckPanel({
       {flow === "needs_fix" && lastValidationResponse && (
         <div className="space-y-2.5">
           <p className="text-[10px] font-semibold text-[var(--vg-text-secondary)]">{lastValidationResponse.summary_message}</p>
-          {lastValidationResponse.findings.map((finding, i) => (
-            <FindingCard key={`${finding.field_id ?? "general"}-${i}`} finding={finding} />
+          {visibleFindings.map((finding, i) => (
+            <FindingCard
+              key={`${finding.field_id ?? "general"}-${i}`}
+              finding={finding}
+              fieldLabel={finding.field_id ? fieldLabels[finding.field_id] : undefined}
+            />
           ))}
         </div>
       )}
@@ -60,6 +74,9 @@ export default function PrecheckPanel({
           trustMetadata={trustMetadata}
           onConfirmU3={onConfirmU3}
           onFeedback={onFeedback}
+          hasConfirmed={hasConfirmedU3}
+          procedureId={procedureId}
+          onStartNew={onStartNew}
         />
       )}
     </div>

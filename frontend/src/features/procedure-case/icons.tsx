@@ -159,3 +159,11 @@ export function WarningOctagonIcon({ className = "w-4 h-4", stroke = "currentCol
     </svg>
   );
 }
+
+export function SparkleIcon({ className = "w-4 h-4", stroke = "currentColor" }: IconProps) {
+  return (
+    <svg {...base} className={className} stroke={stroke} strokeWidth={1.5}>
+      <path d="M12 3l1.8 4.9L19 9.7l-4.4 3.2L16 18l-4-2.9L8 18l1.4-5.1L5 9.7l5.2-.8L12 3Z" />
+    </svg>
+  );
+}
