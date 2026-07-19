@@ -6,6 +6,7 @@ import {
   checkHealth,
   postChecklist,
   postIntakeTurn,
+  postPrefill,
   postValidate,
   submitFeedback,
 } from "./api";
@@ -252,7 +253,14 @@ export function useProcedureCase(
           },
           controller.signal,
         );
-        if (response.trust_state === "official_review_required") {
+        // Demo/fixture packs stay official_review_required by design (D-023/D-024)
+        // while their review gates remain operable; only a real non-demo block
+        // should reroute the whole flow to the official-review screen.
+        const blocked =
+          response.trust_state === "official_review_required" &&
+          !response.demo_mode &&
+          !response.fixture_mode;
+        if (blocked) {
           dispatch({ type: "INTAKE_RESPONSE_RECEIVED", response });
         } else {
           dispatch({ type: "SESSION_CONTEXT_UPDATED", sessionContext: response.proposed_session_context });
@@ -271,10 +279,30 @@ export function useProcedureCase(
   const confirmU2 = useCallback(async () => {
     if (fixtureState) return;
     const response = await acknowledgeReviewGate("U2");
-    if (response?.trust_state === "verified_guidance") {
+    if (response && (response.trust_state === "verified_guidance" || response.demo_mode || response.fixture_mode)) {
       dispatch({ type: "CONFIRM_U2" });
     }
   }, [fixtureState, acknowledgeReviewGate]);
+
+  const prefillFromText = useCallback(async (text: string) => {
+    if (fixtureState) return;
+    const { sessionId, sessionContext, checklist, isBusy } = stateRef.current;
+    const trimmed = text.trim();
+    if (!trimmed || isBusy || !checklist) return;
+    dispatch({ type: "PREFILL_STARTED" });
+    try {
+      const response = await postPrefill({
+        procedure_id: checklist.procedure_id,
+        procedure_version: checklist.procedure_version ?? undefined,
+        session_id: sessionId,
+        text: trimmed,
+        session_context: sessionContext,
+      });
+      dispatch({ type: "PREFILL_APPLIED", values: response.proposed_form_data ?? {} });
+    } catch {
+      dispatch({ type: "PREFILL_FAILED" });
+    }
+  }, [fixtureState]);
 
   const updateFormField = useCallback(
     (key: string, value: FormFieldValue) => {
@@ -313,7 +341,7 @@ export function useProcedureCase(
   const confirmU3 = useCallback(async () => {
     if (fixtureState) return;
     const response = await acknowledgeReviewGate("U3");
-    if (response?.trust_state === "verified_guidance") {
+    if (response && (response.trust_state === "verified_guidance" || response.demo_mode || response.fixture_mode)) {
       dispatch({ type: "CONFIRM_U3" });
     }
   }, [fixtureState, acknowledgeReviewGate]);
@@ -388,6 +416,7 @@ export function useProcedureCase(
       editClarificationAnswer,
       confirmU2,
       updateFormField,
+      prefillFromText,
       runPrecheck,
       confirmU3,
       selectStaticProcedure,

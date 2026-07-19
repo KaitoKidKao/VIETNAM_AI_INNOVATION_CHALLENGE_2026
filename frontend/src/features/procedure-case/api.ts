@@ -1,6 +1,7 @@
 import { API_BASE_URL, REQUEST_TIMEOUT_MS, RETRY_BACKOFF_MS } from "./procedureCase.constants";
 import type {
   ChecklistRequest,
+  PrefillResponse,
   ChecklistResponse,
   FeedbackEntry,
   IntakeRequest,
@@ -131,6 +132,19 @@ export function postValidate(
   signal?: AbortSignal,
 ): Promise<ValidationResponse> {
   return postJson<ValidationResponse>("/v1/applications/validate", req, signal);
+}
+
+export function postPrefill(
+  req: {
+    procedure_id: string;
+    procedure_version?: string;
+    session_id: string;
+    text: string;
+    session_context: unknown;
+  },
+  signal?: AbortSignal,
+): Promise<PrefillResponse> {
+  return postJson<PrefillResponse>("/v1/applications/prefill", req, signal);
 }
 
 export async function listProcedures(): Promise<ProcedureSummary[]> {
