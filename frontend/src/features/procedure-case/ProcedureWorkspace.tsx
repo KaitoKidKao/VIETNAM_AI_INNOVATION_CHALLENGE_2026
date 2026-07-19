@@ -102,21 +102,12 @@ export default function ProcedureWorkspace({
     <div className="copilot-workspace flex flex-col h-screen bg-[var(--vg-canvas)] text-[var(--vg-text)] font-sans antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)]">
       {/* Header */}
       <header className="flex items-center justify-between gap-4 px-6 pr-[max(1.5rem,env(safe-area-inset-right))] pl-[max(1.5rem,env(safe-area-inset-left))] py-3 min-h-[72px] bg-[var(--vg-surface)] border-b border-[var(--vg-border)] shrink-0 relative z-20">
-        <div className="flex items-center gap-3 min-w-0">
-          <Image src={vngovSymbol} alt="Biểu tượng VNGov" className="w-9 h-9 shrink-0 object-contain" priority unoptimized />
-          <Image src={portalLogo} alt="Cổng dịch vụ công Quốc gia" className="h-7 w-auto hidden sm:block" priority />
-          <span className="text-[var(--vg-border-strong)] font-light text-lg hidden sm:inline">|</span>
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base font-bold tracking-tight text-[var(--vg-text)] truncate">
-              VNGov Copilot
-            </span>
-            <span className="text-[10px] font-semibold text-[var(--vg-text-muted)] hidden md:inline">
-              Trợ lý AI cho dịch vụ công
-            </span>
-          </div>
+        <div className="flex items-center gap-4 min-w-0">
+          <Image src={vngovSymbol} alt="Biểu tượng VNGov" className="w-12 h-12 shrink-0 object-contain" priority unoptimized />
+          <Image src={portalLogo} alt="Cổng dịch vụ công Quốc gia" className="h-10 w-auto hidden sm:block object-contain" priority />
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-3.5 shrink-0">
           <button
             onClick={onGoLanding}
             className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[var(--vg-border)] bg-[var(--vg-surface)] hover:bg-[var(--vg-surface-subtle)] text-xs font-bold text-[var(--vg-accent)] transition-all"
@@ -128,45 +119,29 @@ export default function ProcedureWorkspace({
             onClick={actions.resetSession}
             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--vg-border)] bg-[var(--vg-surface)] hover:bg-[var(--vg-surface-subtle)] text-xs font-semibold text-[var(--vg-text-secondary)] transition-all"
           >
-            Xóa dữ liệu phiên
+            Xóa đoạn chat
           </button>
 
-          <div
-            role="status"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-bold ${
-              state.availability.backendReachable
-                ? "bg-[var(--vg-success-soft)] border-[var(--vg-success)]/30 text-[var(--vg-success)]"
-                : "bg-[var(--vg-error-soft)] border-[var(--vg-error)]/30 text-[var(--vg-error)]"
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${state.availability.backendReachable ? "bg-[var(--vg-success)] animate-pulse" : "bg-[var(--vg-error)]"}`}
-            />
-            {state.availability.backendReachable ? "Hệ thống kết nối" : "Mất kết nối"}
-          </div>
-
-          <div className="hidden text-right sm:block">
-            <p className="text-xs font-bold text-[var(--vg-accent)]">{user?.display_name ?? "Người dùng"}</p>
-            <button
-              type="button"
-              onClick={onLogout}
-              disabled={avatarDisabled}
-              className="text-[10px] font-semibold text-[var(--vg-text-muted)] hover:text-[var(--vg-error)] disabled:opacity-40 disabled:cursor-not-allowed"
+          <div className="flex items-center gap-3 bg-[var(--vg-surface-subtle)] border border-[var(--vg-border)] rounded-full pl-3.5 pr-2 py-1 shadow-sm">
+            <div className="hidden sm:flex flex-col text-left">
+              <span className="text-xs font-bold text-[var(--vg-text)]">{user?.display_name ?? "Người dùng"}</span>
+              <button
+                type="button"
+                onClick={onLogout}
+                disabled={avatarDisabled}
+                className="text-[10px] text-left font-medium text-[var(--vg-text-muted)] hover:text-[var(--vg-error)] transition-colors disabled:opacity-40"
+              >
+                Đăng xuất
+              </button>
+            </div>
+            {/* Divider */}
+            <div className="hidden sm:block w-px h-5 bg-[var(--vg-border)]" />
+            <div
+              className="w-8 h-8 rounded-full bg-[var(--vg-accent-soft)] border border-[var(--vg-accent)]/30 flex items-center justify-center font-bold text-xs text-[var(--vg-accent)] select-none"
             >
-              Đăng xuất
-            </button>
+              {(user?.display_name ?? "ND").slice(0, 2).toUpperCase()}
+            </div>
           </div>
-
-          <button
-            type="button"
-            onClick={onLogout}
-            disabled={avatarDisabled}
-            aria-label="Đăng xuất"
-            title={avatarDisabled ? "Không khả dụng trong chế độ xem trước" : undefined}
-            className="w-8 h-8 rounded-full bg-[var(--vg-surface-subtle)] border border-[var(--vg-border)] flex items-center justify-center font-bold text-xs text-[var(--vg-accent)] hover:bg-[var(--vg-gold-soft)] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--vg-surface-subtle)]"
-          >
-            {(user?.display_name ?? "ND").slice(0, 2).toUpperCase()}
-          </button>
         </div>
       </header>
 
@@ -327,33 +302,41 @@ export default function ProcedureWorkspace({
                       )}
                     </div>
                     <div className="flex items-center">
-                      {PROGRESS_STAGES.map((s, i) => (
-                        <div key={s.id} className="flex items-center flex-1 last:flex-none">
-                          <div className="flex flex-col items-center gap-1">
-                            <div
-                              className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 ${
-                                s.id < stage.id
-                                  ? "bg-[var(--vg-success)] border-[var(--vg-success)] text-white"
-                                  : s.id === stage.id
-                                    ? "border-[var(--vg-accent)] text-[var(--vg-accent)] bg-[var(--vg-accent-soft)]"
-                                    : "border-[var(--vg-border)] text-[var(--vg-text-muted)]"
-                              }`}
-                            >
-                              {s.id < stage.id ? "✓" : s.id}
+                      {PROGRESS_STAGES.map((s, i) => {
+                        const isStepComplete = s.id < stage.id || (s.id === 6 && state.sessionContext.acknowledged_review_gates?.includes("U3"));
+                        const isStepActive = s.id === stage.id && !isStepComplete;
+                        return (
+                          <div key={s.id} className="flex items-center flex-1 last:flex-none">
+                            <div className="flex flex-col items-center gap-1">
+                              <div
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 ${
+                                  isStepComplete
+                                    ? "bg-[var(--vg-success)] border-[var(--vg-success)] text-white"
+                                    : isStepActive
+                                      ? "border-[var(--vg-accent)] text-[var(--vg-accent)] bg-[var(--vg-accent-soft)]"
+                                      : "border-[var(--vg-border)] text-[var(--vg-text-muted)]"
+                                }`}
+                              >
+                                {isStepComplete ? "✓" : s.id}
+                              </div>
+                              <span
+                                className={`text-[9px] font-semibold whitespace-nowrap ${
+                                  isStepComplete
+                                    ? "text-[var(--vg-success)]"
+                                    : isStepActive
+                                      ? "text-[var(--vg-accent)]"
+                                      : "text-[var(--vg-text-muted)]"
+                                }`}
+                              >
+                                {s.label}
+                              </span>
                             </div>
-                            <span
-                              className={`text-[9px] font-semibold whitespace-nowrap ${
-                                s.id === stage.id ? "text-[var(--vg-accent)]" : "text-[var(--vg-text-muted)]"
-                              }`}
-                            >
-                              {s.label}
-                            </span>
+                            {i < PROGRESS_STAGES.length - 1 && (
+                              <div className={`flex-1 h-px mx-1 mb-4 ${isStepComplete ? "bg-[var(--vg-success)]" : "bg-[var(--vg-border)]"}`} />
+                            )}
                           </div>
-                          {i < PROGRESS_STAGES.length - 1 && (
-                            <div className={`flex-1 h-px mx-1 mb-4 ${s.id < stage.id ? "bg-[var(--vg-success)]" : "bg-[var(--vg-border)]"}`} />
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -405,6 +388,7 @@ export default function ProcedureWorkspace({
                       onRunPrecheck={actions.runPrecheck}
                       onConfirmU3={actions.confirmU3}
                       onFeedback={(vote, reason, note) => actions.recordFeedback("precheck", vote, reason, note)}
+                      hasConfirmedU3={Boolean(state.sessionContext.acknowledged_review_gates?.includes("U3"))}
                     />
                   )}
                 </div>

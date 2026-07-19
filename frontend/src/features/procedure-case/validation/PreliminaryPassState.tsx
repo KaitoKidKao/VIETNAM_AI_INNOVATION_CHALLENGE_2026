@@ -11,6 +11,7 @@ interface PreliminaryPassStateProps {
   trustMetadata: TrustMetadata | null;
   onConfirmU3: () => void;
   onFeedback: (vote: "up" | "down", reason?: FeedbackReasonCode, note?: string) => void;
+  hasConfirmed?: boolean;
 }
 
 export default function PreliminaryPassState({
@@ -18,6 +19,7 @@ export default function PreliminaryPassState({
   trustMetadata,
   onConfirmU3,
   onFeedback,
+  hasConfirmed = false,
 }: PreliminaryPassStateProps) {
   return (
     <div className="border border-[var(--vg-success)]/30 bg-[var(--vg-success-soft)] rounded-xl p-4 text-left space-y-3">
@@ -32,13 +34,19 @@ export default function PreliminaryPassState({
         demoMode={trustMetadata?.demo_mode}
       />
 
-      <button
-        type="button"
-        onClick={onConfirmU3}
-        className="px-4 py-2 bg-[var(--vg-accent)] text-white text-xs font-bold rounded-lg hover:bg-[var(--vg-accent-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--vg-accent)] outline-none"
-      >
-        Đã hiểu, hoàn tất xem trước
-      </button>
+      {hasConfirmed ? (
+        <div className="text-xs font-bold text-[var(--vg-success)] flex items-center gap-1.5 py-1">
+          <span>✓ Bạn đã hoàn tất xem trước và kiểm tra hồ sơ thành công.</span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onConfirmU3}
+          className="px-4 py-2 bg-[var(--vg-accent)] text-white text-xs font-bold rounded-lg hover:bg-[var(--vg-accent-hover)] transition-all focus-visible:ring-2 focus-visible:ring-[var(--vg-accent)] outline-none"
+        >
+          Đã hiểu, hoàn tất xem trước
+        </button>
+      )}
       <FeedbackControls context="precheck" onSubmit={onFeedback} />
       <GuidanceDisclaimer />
     </div>
