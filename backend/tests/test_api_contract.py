@@ -42,6 +42,14 @@ def approved_birth_pack() -> ProcedurePack:
         rule.model_copy(update={"source_ref_ids": [official_source.ref_id]})
         for rule in fixture.validation_rules
     ]
+    required_documents = [
+        document.model_copy(update={"source_ref_ids": [official_source.ref_id]})
+        for document in fixture.required_documents
+    ]
+    optional_documents = [
+        document.model_copy(update={"source_ref_ids": [official_source.ref_id]})
+        for document in fixture.optional_documents
+    ]
     return fixture.model_copy(
         update={
             "version": "approved-test-v1",
@@ -50,6 +58,8 @@ def approved_birth_pack() -> ProcedurePack:
             "source_refs": [official_source],
             "last_verified_at": date.today(),
             "validation_rules": rules,
+            "required_documents": required_documents,
+            "optional_documents": optional_documents,
         }
     )
 
@@ -99,10 +109,7 @@ def test_recommend_and_intake_support_accented_vietnamese(client: TestClient) ->
     assert recommend.json()["trust_state"] == "official_review_required"
     assert intake.status_code == 200
     assert intake.json()["detected_procedure_id"] == "dang-ky-thuong-tru"
-    assert (
-        intake.json()["proposed_session_context"]["procedure_id"]
-        == "dang-ky-thuong-tru"
-    )
+    assert intake.json()["proposed_session_context"]["procedure_id"] == "dang-ky-thuong-tru"
 
 
 def test_fixture_checklist_and_precheck_fail_closed(client: TestClient) -> None:
@@ -118,8 +125,12 @@ def test_fixture_checklist_and_precheck_fail_closed(client: TestClient) -> None:
     assert checklist.status_code == 200
     assert checklist.json()["fixture_mode"] is True
     assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["last_verified_at"] is None
     assert checklist.json()["procedure_card"] is None
-    assert checklist.json()["form_schema"] == {}
+    assert checklist.json()["required_documents"]
+    assert checklist.json()["steps"]
+    assert checklist.json()["form_schema"]["properties"]
+    assert "không phải yêu cầu hồ sơ thật" in checklist.json()["message_plain"]
     assert validation.status_code == 200
     assert validation.json()["verdict"] is None
     assert validation.json()["trust_state"] == "official_review_required"
@@ -185,20 +196,82 @@ def test_approved_adapter_enables_deterministic_precheck() -> None:
     assert valid.json()["findings"] == []
 
 
+def test_candidate_source_exposes_cited_checklist_but_keeps_precheck_closed() -> None:
+    settings = Settings(app_env="test", procedure_data_mode="rag", rag_mode="disabled")
+    container = build_container(settings)
+    candidate_pack = approved_birth_pack().model_copy(
+        update={
+            "version": "candidate-test-v1",
+            "review_status": ReviewStatus.NEEDS_REVIEW,
+            "last_verified_at": None,
+        }
+    )
+    container.procedure_repository = ApprovedProcedureRepository(candidate_pack)
+    candidate_client = TestClient(create_app(settings=settings, container=container))
+
+    checklist = candidate_client.post(
+        "/v1/procedures/dang-ky-khai-sinh/checklist",
+        json={"clarification_answers": {}},
+    )
+    validation = candidate_client.post(
+        "/v1/applications/validate",
+        json={"procedure_id": "dang-ky-khai-sinh", "form_data": {}},
+    )
+
+    assert checklist.status_code == 200
+    assert checklist.json()["trust_state"] == "official_review_required"
+    assert checklist.json()["fixture_mode"] is False
+    assert checklist.json()["source_refs"]
+    assert checklist.json()["required_documents"]
+    assert all(item["source_ref_ids"] for item in checklist.json()["required_documents"])
+    assert checklist.json()["steps"] == []
+    assert checklist.json()["form_schema"] == {}
+    assert checklist.json()["procedure_card"] is None
+    assert validation.status_code == 200
+    assert validation.json()["trust_state"] == "official_review_required"
+    assert validation.json()["verdict"] is None
+
+
 def test_openapi_exposes_current_public_routes(client: TestClient) -> None:
     paths = client.get("/openapi.json").json()["paths"]
 
     assert set(paths) == {
         "/",
         "/health",
+        "/v1/feedback",
         "/v1/applications/validate",
         "/v1/intake/turn",
         "/v1/procedures",
         "/v1/procedures/{procedure_id}/checklist",
         "/v1/procedures/recommend",
-        "/v1/rag/answer",
-        "/v1/rag/search",
     }
+
+
+def test_legacy_rag_routes_require_explicit_opt_in(client: TestClient) -> None:
+    default_paths = client.get("/openapi.json").json()["paths"]
+    default_root = client.get("/").json()
+
+    assert "/v1/rag/search" not in default_paths
+    assert "/v1/rag/answer" not in default_paths
+    assert client.get("/v1/rag/search", params={"query": "test"}).status_code == 404
+    assert client.get("/v1/rag/answer", params={"query": "test"}).status_code == 404
+    assert default_root["intake_turn"] == "/v1/intake/turn"
+    assert "legacy_rag_search" not in default_root
+    assert "legacy_rag_answer" not in default_root
+
+    enabled_settings = Settings(
+        app_env="test",
+        procedure_data_mode="fixture",
+        legacy_rag_enabled=True,
+    )
+    enabled_client = TestClient(create_app(settings=enabled_settings))
+    enabled_paths = enabled_client.get("/openapi.json").json()["paths"]
+    enabled_root = enabled_client.get("/").json()
+
+    assert "/v1/rag/search" in enabled_paths
+    assert "/v1/rag/answer" in enabled_paths
+    assert enabled_root["legacy_rag_search"] == "/v1/rag/search"
+    assert enabled_root["legacy_rag_answer"] == "/v1/rag/answer"
 
 
 def test_production_rejects_dev_fixture() -> None:
@@ -275,9 +348,7 @@ def test_production_disabled_is_degraded_and_never_exposes_fixture_data() -> Non
 
 
 def test_request_limit_and_rate_limit_have_safe_errors(client: TestClient) -> None:
-    too_large = client.post(
-        "/v1/procedures/recommend", json={"need_text": "a" * 70_000}
-    )
+    too_large = client.post("/v1/procedures/recommend", json={"need_text": "a" * 70_000})
     assert too_large.status_code == 422
     assert too_large.json()["error"]["code"] == "request_too_large"
 
@@ -288,12 +359,8 @@ def test_request_limit_and_rate_limit_have_safe_errors(client: TestClient) -> No
         rate_limit_requests=1,
     )
     limited_client = TestClient(create_app(settings=settings))
-    first = limited_client.post(
-        "/v1/procedures/recommend", json={"need_text": "khai sinh"}
-    )
-    second = limited_client.post(
-        "/v1/procedures/recommend", json={"need_text": "khai sinh"}
-    )
+    first = limited_client.post("/v1/procedures/recommend", json={"need_text": "khai sinh"})
+    second = limited_client.post("/v1/procedures/recommend", json={"need_text": "khai sinh"})
 
     assert first.status_code == 200
     assert second.status_code == 429
