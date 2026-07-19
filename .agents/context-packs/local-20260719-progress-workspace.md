@@ -27,6 +27,8 @@
 - Files/areas duoc phep cham:
   - `frontend/src/features/procedure-case/ProcedureWorkspace.tsx`
   - `frontend/src/features/procedure-case/progress/**`
+  - `frontend/src/features/procedure-case/procedureCase.selectors.ts`
+  - `frontend/src/features/procedure-case/procedureCase.selectors.test.ts`
   - `frontend/src/features/procedure-case/form/DynamicFormRenderer.tsx`
   - test frontend lien quan neu can
   - context pack va design review cua task
@@ -58,7 +60,7 @@
 - Commands / manual checks: `npm run test`, `npm run typecheck`, `npm run lint`, `npm run build`, `python scripts/ci/validate_repo.py`, Impeccable target audit; fixture preview tai desktop/mobile neu browser local san sang.
 - Demo impact va rollback: chi thay layout; rollback bang revert commit task.
 - Evidence / ket qua:
-  - `npm run test`: 5 files, 96 tests passed.
+  - `npm run test`: 5 files, 97 tests passed, gom regression test cho U3 completion.
   - `npm run typecheck`: passed.
   - `npm run lint`: passed.
   - `npm run build -- --webpack`: production build passed trong worktree.
@@ -69,6 +71,8 @@
   - `frontend/src/features/procedure-case/ProcedureWorkspace.tsx`
   - `frontend/src/features/procedure-case/progress/ProgressWorkspaceRail.tsx`
   - `frontend/src/features/procedure-case/form/DynamicFormRenderer.tsx`
+  - `frontend/src/features/procedure-case/procedureCase.selectors.ts`
+  - `frontend/src/features/procedure-case/procedureCase.selectors.test.ts`
   - `docs/design/reviews/local-20260719-progress-workspace-impeccable.md`
   - Context Pack nay
 - Claims da release: source claim release sau khi commit/handoff.

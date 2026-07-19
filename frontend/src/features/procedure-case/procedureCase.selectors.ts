@@ -59,12 +59,22 @@ export const PROGRESS_STAGE_COUNT = 6;
  * step 1 while the user's real in-progress data (checklist/form) is still
  * on screen — this is the fix for the stale-form-at-step-1 regression.
  */
-export function selectProgressStage(state: ProcedureCaseState): ProgressStage & { total: number } {
+export function selectProgressStage(
+  state: ProcedureCaseState,
+): ProgressStage & { total: number; completed: number } {
   const flow: StableFlowState =
     state.flow === "degraded" || state.flow === "official_review_required"
       ? (state.lastStableFlow as StableFlowState)
       : (state.flow as StableFlowState);
-  return { ...(PROGRESS_STAGES[flow] ?? PROGRESS_STAGES.idle), total: PROGRESS_STAGE_COUNT };
+  const stage = PROGRESS_STAGES[flow] ?? PROGRESS_STAGES.idle;
+  const hasCompletedPreview = Boolean(
+    state.sessionContext.acknowledged_review_gates?.includes("U3"),
+  );
+  return {
+    ...stage,
+    total: PROGRESS_STAGE_COUNT,
+    completed: hasCompletedPreview ? PROGRESS_STAGE_COUNT : stage.id - 1,
+  };
 }
 
 export type RightPaneMode =

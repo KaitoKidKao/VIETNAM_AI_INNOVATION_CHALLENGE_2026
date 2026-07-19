@@ -35,7 +35,7 @@ const WORKFLOW_STAGES = [
 ] as const;
 
 interface ProgressWorkspaceRailProps {
-  stage: ProgressStage & { total: number };
+  stage: ProgressStage & { total: number; completed: number };
   procedureName?: string;
   degraded?: boolean;
 }
@@ -45,7 +45,7 @@ export default function ProgressWorkspaceRail({
   procedureName,
   degraded = false,
 }: ProgressWorkspaceRailProps) {
-  const completedCount = stage.id === stage.total ? stage.total : stage.id - 1;
+  const completedCount = stage.completed;
   const activeStep = WORKFLOW_STAGES.find((item) => item.id === stage.id) ?? WORKFLOW_STAGES[0];
 
   return (
@@ -71,7 +71,11 @@ export default function ProgressWorkspaceRail({
             <span
               key={item.id}
               className={`h-1.5 rounded-full ${
-                item.id <= stage.id ? "bg-[var(--vg-accent)]" : "bg-[var(--vg-border)]"
+                item.id <= completedCount
+                  ? "bg-[var(--vg-success)]"
+                  : item.id === stage.id
+                    ? "bg-[var(--vg-accent)]"
+                    : "bg-[var(--vg-border)]"
               }`}
             />
           ))}
@@ -114,7 +118,7 @@ export default function ProgressWorkspaceRail({
 
         <ol className="mt-5 flex-1" aria-label="Các bước chuẩn bị hồ sơ">
           {WORKFLOW_STAGES.map((item, index) => {
-            const isComplete = item.id < stage.id || completedCount === stage.total;
+            const isComplete = item.id <= completedCount;
             const isCurrent = item.id === stage.id;
 
             return (
@@ -138,7 +142,7 @@ export default function ProgressWorkspaceRail({
                   {index < WORKFLOW_STAGES.length - 1 && (
                     <span
                       className={`min-h-8 w-px flex-1 ${
-                        item.id < stage.id ? "bg-[var(--vg-success)]" : "bg-[var(--vg-border)]"
+                        item.id <= completedCount ? "bg-[var(--vg-success)]" : "bg-[var(--vg-border)]"
                       }`}
                       aria-hidden="true"
                     />
