@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import LoginDialog from "@/features/auth/LoginDialog";
 import { clearDemoSession, readDemoSession, startDemoSession } from "@/features/auth/session";
 import type { StoredDemoSession } from "@/features/auth/types";
@@ -18,7 +18,13 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [modalText, setModalText] = useState("");
-  const [authSession, setAuthSession] = useState<StoredDemoSession | null>(() => readDemoSession());
+  // Hydration-safe: sessionStorage only exists on the client, so the first
+  // render must match the server (unauthenticated) and load the session
+  // after mount instead of during state initialization.
+  const [authSession, setAuthSession] = useState<StoredDemoSession | null>(null);
+  useEffect(() => {
+    setAuthSession(readDemoSession());
+  }, []);
   const [showLogin, setShowLogin] = useState(false);
   const [handoffMessage, setHandoffMessage] = useState<string | undefined>();
   const [handoffProcedureId, setHandoffProcedureId] = useState<string | undefined>();
