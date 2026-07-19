@@ -307,6 +307,10 @@ class GatewayLLMProvider:
         """De xuat gia tri form tu mo ta tu nhien; None khi offline/khong trich duoc."""
         return LLMGateway.extract_form_data(text, form_schema)
 
+    async def classify_procedure(self, text: str, catalog: list) -> str | None:
+        """Nhan dien thu tuc tu mo ta tu nhien; chi tra id trong catalog hoac None."""
+        return LLMGateway.classify_procedure(text, catalog)
+
     async def explain_findings(
         self, session_id: str, form_data: dict[str, Any], findings: Sequence[Finding]
     ) -> dict[str, str]:

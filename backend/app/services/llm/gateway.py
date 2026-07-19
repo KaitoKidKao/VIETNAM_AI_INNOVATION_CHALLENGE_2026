@@ -119,6 +119,25 @@ class LLMGateway:
         return cls._fallback_clarification(user_message, evidence_chunks, pending_questions)
 
     @classmethod
+    def classify_procedure(cls, text: str, catalog: list) -> Optional[str]:
+        """Xep mo ta tu nhien vao mot trong cac procedure_id cho phep (T1, PRD).
+
+        Chi tra ve id nam trong catalog hoac None; khong bao gio tu tao thu tuc
+        moi. Offline/loi -> None (giu nguyen hanh vi deterministic hien tai).
+        """
+        if not catalog:
+            return None
+        payload = json.dumps({"procedures": catalog, "text": text}, ensure_ascii=False)
+        raw = cls._call_json(_CLASSIFY_SYSTEM_PROMPT, payload)
+        if not isinstance(raw, dict):
+            return None
+        procedure_id = raw.get("procedure_id")
+        allowed = {item.get("procedure_id") for item in catalog}
+        if isinstance(procedure_id, str) and procedure_id in allowed:
+            return procedure_id
+        return None
+
+    @classmethod
     def extract_form_data(cls, text: str, form_schema: dict) -> Optional[dict]:
         """De xuat gia tri nhap cho form tu mo ta tu nhien (draft-only).
 
@@ -234,4 +253,14 @@ _EXTRACTION_SYSTEM_PROMPT = (
     "(3) field boolean trả true/false; field number trả số; (4) field có enum phải "
     "chọn đúng một giá trị trong enum, không khớp thì bỏ qua field đó; "
     "(5) không thêm field ngoài danh sách, không thêm văn bản ngoài JSON."
+)
+
+
+_CLASSIFY_SYSTEM_PROMPT = (
+    "Bạn là bộ phân loại nhu cầu thủ tục hành chính. Người dùng cung cấp danh sách "
+    "procedures (procedure_id, name) và một đoạn mô tả tiếng Việt. Trả về DUY NHẤT "
+    'một JSON object {"procedure_id": "<id>" | null}. QUY TẮC: chỉ chọn một id có '
+    "trong danh sách khi đoạn mô tả thể hiện rõ nhu cầu thuộc thủ tục đó (kể cả khi "
+    "người dùng kể gián tiếp, ví dụ kể về việc con mới sinh nghĩa là cần đăng ký khai sinh); "
+    "không chắc chắn hoặc ngoài danh sách thì trả null; không thêm trường hay văn bản nào khác."
 )

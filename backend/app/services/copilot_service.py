@@ -90,6 +90,11 @@ class CopilotService:
             request.need_text, request.session_context
         )
         if not candidates:
+            # T1 (PRD): khi matcher deterministic khong nhan ra, LLM duoc phep
+            # xep mo ta vao mot trong cac pack dang phuc vu. Ket qua van phai
+            # qua gate U1 de nguoi dung xac nhan; offline -> giu hanh vi cu.
+            candidates = await self._llm_candidates(request.need_text)
+        if not candidates:
             metadata = self._trust_policy.needs_more_information(
                 ReviewGate.U1_PROCEDURE_CONFIRMATION
             )
@@ -97,7 +102,11 @@ class CopilotService:
                 **metadata.model_dump(),
                 candidates=[],
                 clarifying_questions=[],
-                message_plain="Hãy chọn một trong ba thủ tục MVP hoặc mô tả rõ hơn nhu cầu của mình.",
+                message_plain=(
+                    "Tôi chưa chắc chắn thủ tục bạn cần 🤔. Bạn mô tả cụ thể hơn giúp tôi nhé "
+                    "(ví dụ: “làm giấy khai sinh cho con”, “chuyển hộ khẩu về nhà mới”, "
+                    "“mở quán ăn nhỏ”) — hoặc chọn nhanh một dịch vụ bên dưới."
+                ),
             )
 
         pack = await self._procedure_repository.get_procedure(candidates[0].procedure_id)
@@ -271,6 +280,33 @@ class CopilotService:
             ),
             proposed_session_context=context,
         )
+
+    async def _llm_candidates(self, need_text: str) -> list[ProcedureCandidate]:
+        classify = getattr(self._llm_provider, "classify_procedure", None)
+        if classify is None or self._llm_provider is None:
+            return []
+        try:
+            if not await self._llm_provider.is_available():
+                return []
+            summaries = await self._procedure_repository.list_procedures()
+            catalog = [
+                {"procedure_id": item.procedure_id, "name": item.name} for item in summaries
+            ]
+            procedure_id = await classify(need_text, catalog)
+        except Exception:
+            return []
+        if not procedure_id or not is_known_procedure(procedure_id):
+            return []
+        pack = await self._procedure_repository.get_procedure(procedure_id)
+        if pack is None:
+            return []
+        return [
+            ProcedureCandidate(
+                procedure_id=pack.procedure_id,
+                name=pack.name,
+                reason="Trợ lý AI nhận diện từ mô tả của bạn — hãy xác nhận trước khi tiếp tục.",
+            )
+        ]
 
     async def prefill(self, request: PrefillRequest) -> PrefillResponse:
         """AI de xuat gia tri nhap cho form tu mo ta tu nhien (draft-only).
