@@ -18,7 +18,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className="h-full antialiased">
+    // suppressHydrationWarning: browser extensions (e.g. MDL) inject classes
+    // into <html> before React hydrates; only this element's own attribute
+    // mismatches are ignored — children are still fully checked.
+    <html lang="vi" className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
