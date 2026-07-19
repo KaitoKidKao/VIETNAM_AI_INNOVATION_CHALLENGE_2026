@@ -173,6 +173,10 @@ export interface FormSchemaProperty {
   title: string;
   minLength?: number;
   format?: string;
+  /** Fixed answer set — rendered as a select so conditional rules match exactly. */
+  enum?: string[];
+  /** Date fields that must not be in the future (mirrors DATE_NOT_FUTURE rules). */
+  x_max_today?: boolean;
 }
 
 export interface FormSchema {
@@ -209,6 +213,13 @@ export interface Finding {
   message: string;
   fix_hint: string | null;
   source_ref_ids: string[];
+}
+
+export interface PrefillResponse extends TrustMetadata {
+  procedure_id: string;
+  proposed_form_data: Record<string, FormFieldValue>;
+  extraction_source: "ai" | "none";
+  message_plain: string;
 }
 
 export interface ValidationResponse extends TrustMetadata {
@@ -312,6 +323,8 @@ export interface ProcedureCaseState {
   checklist: ChecklistResponse | null;
   formDraft: Record<string, FormFieldValue>;
   lastValidationResponse: ValidationResponse | null;
+  /** Fields the user edited after the last precheck; their stale findings are hidden. */
+  dismissedFindingFields: string[];
   trustMetadata: TrustMetadata | null;
   feedbackLog: FeedbackEntry[];
   isBusy: boolean;

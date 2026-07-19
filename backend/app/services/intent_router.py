@@ -67,16 +67,20 @@ def classify_intake_text(value: str) -> IntakeDisposition:
 def disposition_message(disposition: IntakeDisposition) -> str:
     return {
         IntakeDisposition.GREETING: (
-            "Xin chào! Hãy mô tả rõ một trong ba nhu cầu MVP: đăng ký khai sinh, "
-            "đăng ký thường trú hoặc đăng ký hộ kinh doanh."
+            "Xin chào! 👋 Tôi là VNGov, trợ lý giúp bạn chuẩn bị hồ sơ hành chính. "
+            "Hiện tôi hỗ trợ 3 thủ tục: đăng ký khai sinh, đăng ký thường trú và "
+            "đăng ký thành lập hộ kinh doanh. Bạn cứ kể tự nhiên việc mình cần làm nhé — "
+            "ví dụ: “vợ tôi mới sinh bé, giờ cần làm giấy tờ gì?”"
         ),
         IntakeDisposition.OUT_OF_SCOPE: (
-            "Yêu cầu này nằm ngoài phạm vi ba thủ tục MVP. "
-            "Vui lòng kiểm tra trên kênh dịch vụ công chính thức."
+            "Rất tiếc, thủ tục này chưa nằm trong phạm vi bản thử nghiệm "
+            "(hiện tôi chỉ hỗ trợ khai sinh, thường trú và hộ kinh doanh). "
+            "Bạn có thể tra cứu đầy đủ trên Cổng Dịch vụ công Quốc gia: https://dichvucong.gov.vn nhé."
         ),
         IntakeDisposition.UNSUPPORTED_NEAR_INTENT: (
-            "Đây là trường hợp gần nghĩa nhưng không thuộc đúng thủ tục MVP đang hỗ trợ. "
-            "Vui lòng kiểm tra thủ tục tương ứng trên kênh chính thức."
+            "Trường hợp của bạn khá gần với thủ tục tôi hỗ trợ nhưng chưa đúng phạm vi "
+            "bản thử nghiệm. Để chắc chắn không mất công chuẩn bị nhầm, bạn vui lòng "
+            "kiểm tra thủ tục tương ứng trên Cổng Dịch vụ công Quốc gia (dichvucong.gov.vn) nhé."
         ),
         IntakeDisposition.CONTINUE: "",
     }[disposition]

@@ -79,7 +79,27 @@ describe("selectProgressStage", () => {
     for (const [flow, expectedId] of Object.entries(EXPECTED_STAGE) as [FlowState, number][]) {
       expect(selectProgressStage({ ...base, flow, lastStableFlow: flow }).id, `flow=${flow}`).toBe(expectedId);
       expect(selectProgressStage({ ...base, flow, lastStableFlow: flow }).total).toBe(6);
+      expect(selectProgressStage({ ...base, flow, lastStableFlow: flow }).completed).toBe(expectedId - 1);
     }
+  });
+
+  it("marks all six steps complete only after the final review gate is acknowledged", () => {
+    const base = createInitialState("s1");
+    const beforeConfirmation = {
+      ...base,
+      flow: "pass_preliminary" as const,
+      lastStableFlow: "pass_preliminary" as const,
+    };
+    const afterConfirmation = {
+      ...beforeConfirmation,
+      sessionContext: {
+        ...base.sessionContext,
+        acknowledged_review_gates: ["U3" as const],
+      },
+    };
+
+    expect(selectProgressStage(beforeConfirmation).completed).toBe(5);
+    expect(selectProgressStage(afterConfirmation).completed).toBe(6);
   });
 
   it("resolves degraded/official_review_required via lastStableFlow instead of regressing to stage 1", () => {
