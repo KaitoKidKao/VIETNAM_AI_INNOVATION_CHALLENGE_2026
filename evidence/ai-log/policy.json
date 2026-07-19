@@ -26,7 +26,7 @@
   "maxPromptCharacters": 100000,
   "historyEnforcement": {
     "mode": "policy-presence",
-    "enabled": false,
+    "enabled": true,
     "exemptMergeCommits": true,
     "exemptCommitOids": [
       {
@@ -124,6 +124,10 @@
       {
         "oid": "4a1d8780e4f220ab46bd68169b4ccf045d1696cd",
         "reason": "Historical pitch-script commit predates repository-scoped AI Log capture on dev."
+      },
+      {
+        "oid": "96b0fc84476549519f92e1a4ac641ca2f54a02f1",
+        "reason": "Emergency backend/CI repair committed before the local AI Log hook was restored in this worktree."
       }
     ]
   },
