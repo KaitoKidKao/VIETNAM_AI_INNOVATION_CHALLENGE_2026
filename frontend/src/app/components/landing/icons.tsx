@@ -150,7 +150,7 @@ export const HeartShieldIcon = ({ className = "w-5 h-5" }: IconProps) => (
 
 export const AiBadge = ({ className = "" }: IconProps) => (
   <span
-    className={`inline-flex items-center justify-center px-1 h-4 min-w-[18px] rounded-full bg-primary text-white text-[9px] font-extrabold leading-none tracking-tight ring-2 ring-white shadow-sm pointer-events-none select-none ${className}`}
+    className={`inline-flex items-center justify-center px-1 h-4 min-w-[18px] rounded-full bg-gov-gold text-[#3d2a00] text-[9px] font-extrabold leading-none tracking-tight ring-2 ring-white shadow-sm pointer-events-none select-none ${className}`}
   >
     AI
   </span>
