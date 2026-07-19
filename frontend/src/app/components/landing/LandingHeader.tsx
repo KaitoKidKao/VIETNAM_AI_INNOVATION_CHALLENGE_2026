@@ -20,7 +20,7 @@ export default function LandingHeader({
   return (
     <header className="w-full bg-white border-b border-border-slate shadow-sm shrink-0 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-gov-gold via-gov-red to-gov-gold" />
-      <div className="w-full bg-amber-50 border-b border-amber-200 text-center text-[11px] md:text-xs font-medium text-amber-800 px-4 py-1">
+      <div className="w-full bg-amber-50 border-b border-amber-200 text-center text-2xs md:text-xs font-medium text-amber-800 px-4 py-1">
         Sản phẩm thử nghiệm tại VAIC 2026 – không phải cổng dịch vụ công chính thức.
       </div>
       <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-6 px-6 md:px-12 py-5">

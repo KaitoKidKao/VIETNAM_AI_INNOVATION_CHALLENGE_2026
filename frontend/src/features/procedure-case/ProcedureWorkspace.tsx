@@ -104,7 +104,7 @@ export default function ProcedureWorkspace({
             <span className="text-base font-bold tracking-tight text-[var(--vg-text)] truncate">
               VNGov Copilot
             </span>
-            <span className="text-[10px] font-semibold text-[var(--vg-text-muted)] hidden md:inline">
+            <span className="text-2xs font-semibold text-[var(--vg-text-muted)] hidden md:inline">
               Trợ lý AI cho dịch vụ công
             </span>
           </div>
@@ -127,14 +127,14 @@ export default function ProcedureWorkspace({
 
           <div
             role="status"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-bold ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-2xs font-bold transition-colors duration-200 ${
               state.availability.backendReachable
                 ? "bg-[var(--vg-success-soft)] border-[var(--vg-success)]/30 text-[var(--vg-success)]"
                 : "bg-[var(--vg-error-soft)] border-[var(--vg-error)]/30 text-[var(--vg-error)]"
             }`}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full ${state.availability.backendReachable ? "bg-[var(--vg-success)] animate-pulse" : "bg-[var(--vg-error)]"}`}
+              className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${state.availability.backendReachable ? "bg-[var(--vg-success)] animate-pulse" : "bg-[var(--vg-error)]"}`}
             />
             {state.availability.backendReachable ? "Hệ thống kết nối" : "Mất kết nối"}
           </div>
@@ -145,7 +145,7 @@ export default function ProcedureWorkspace({
               type="button"
               onClick={onLogout}
               disabled={avatarDisabled}
-              className="text-[10px] font-semibold text-[var(--vg-text-muted)] hover:text-[var(--vg-error)] disabled:opacity-40 disabled:cursor-not-allowed"
+              className="text-2xs font-semibold text-[var(--vg-text-muted)] hover:text-[var(--vg-error)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Đăng xuất
             </button>
@@ -248,7 +248,7 @@ export default function ProcedureWorkspace({
             </button>
           </div>
 
-          <div className={`${activeLeftTab === "chat" ? "flex" : "hidden"} flex-col flex-1 overflow-hidden bg-[var(--vg-surface)]`}>
+          <div className={`${activeLeftTab === "chat" ? "flex animate-vg-reveal" : "hidden"} flex-col flex-1 overflow-hidden bg-[var(--vg-surface)]`}>
             <ChatTranscript messages={state.transcript} />
 
             {paneView.mode === "procedure_review" && state.lastIntakeResponse?.procedure && (
@@ -279,7 +279,7 @@ export default function ProcedureWorkspace({
             />
           </div>
 
-          <div className={`${activeLeftTab === "checklist" ? "flex" : "hidden"} flex-col flex-1 overflow-y-auto bg-[var(--vg-surface)]`}>
+          <div className={`${activeLeftTab === "checklist" ? "flex animate-vg-reveal" : "hidden"} flex-col flex-1 overflow-y-auto bg-[var(--vg-surface)]`}>
             {state.checklist ? (
               <ChecklistPanel
                 state={state}
@@ -302,22 +302,22 @@ export default function ProcedureWorkspace({
         </aside>
 
         {/* Right column */}
-        <main className={`${activeMobileTab === "form" ? "flex" : "hidden"} md:flex flex-col flex-1 bg-[var(--vg-canvas)] overflow-y-auto p-6`}>
+        <main className={`${activeMobileTab === "form" ? "flex animate-vg-reveal" : "hidden"} md:flex flex-col flex-1 bg-[var(--vg-canvas)] overflow-y-auto p-6`}>
           {paneView.mode === "official_review" ? (
-            <div className="m-auto w-full">
+            <div className="m-auto w-full animate-vg-reveal">
               <OfficialReviewCard message={officialReviewMessage} trustMetadata={state.trustMetadata} />
             </div>
           ) : canRenderForm && state.checklist ? (
-            <div className="max-w-4xl mx-auto w-full">
+            <div className="max-w-4xl mx-auto w-full animate-vg-reveal">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <div className="lg:col-span-5 space-y-6 text-left">
                   <div className="p-4 bg-[var(--vg-surface)] border border-[var(--vg-border)] rounded-xl space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-[var(--vg-text-muted)] uppercase tracking-wider">
+                      <span className="text-2xs font-bold text-[var(--vg-text-muted)] uppercase tracking-wider">
                         Bước {stage.id} / {stage.total}
                       </span>
                       {paneView.degraded && (
-                        <span className="text-[10px] font-bold text-[var(--vg-error)]">Đang gián đoạn kết nối</span>
+                        <span className="text-2xs font-bold text-[var(--vg-error)]">Đang gián đoạn kết nối</span>
                       )}
                     </div>
                     <div className="flex items-center">
@@ -325,7 +325,7 @@ export default function ProcedureWorkspace({
                         <div key={s.id} className="flex items-center flex-1 last:flex-none">
                           <div className="flex flex-col items-center gap-1">
                             <div
-                              className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 ${
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-2xs font-bold border-2 transition-colors duration-200 ${
                                 s.id < stage.id
                                   ? "bg-[var(--vg-success)] border-[var(--vg-success)] text-white"
                                   : s.id === stage.id
@@ -333,10 +333,10 @@ export default function ProcedureWorkspace({
                                     : "border-[var(--vg-border)] text-[var(--vg-text-muted)]"
                               }`}
                             >
-                              {s.id < stage.id ? "✓" : s.id}
+                              {s.id < stage.id ? <span className="animate-vg-pop">✓</span> : s.id}
                             </div>
                             <span
-                              className={`text-[9px] font-semibold whitespace-nowrap ${
+                              className={`text-2xs font-semibold whitespace-nowrap transition-colors duration-200 ${
                                 s.id === stage.id ? "text-[var(--vg-accent)]" : "text-[var(--vg-text-muted)]"
                               }`}
                             >
@@ -344,14 +344,19 @@ export default function ProcedureWorkspace({
                             </span>
                           </div>
                           {i < PROGRESS_STAGES.length - 1 && (
-                            <div className={`flex-1 h-px mx-1 mb-4 ${s.id < stage.id ? "bg-[var(--vg-success)]" : "bg-[var(--vg-border)]"}`} />
+                            <div className="flex-1 h-px mx-1 mb-4 bg-[var(--vg-border)] overflow-hidden">
+                              <div
+                                className="h-full w-full bg-[var(--vg-success)] origin-left transition-transform duration-300 ease-out"
+                                style={{ transform: s.id < stage.id ? "scaleX(1)" : "scaleX(0)" }}
+                              />
+                            </div>
                           )}
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 p-3 bg-[var(--vg-surface-subtle)] border border-[var(--vg-border)] rounded-xl text-[10px] text-[var(--vg-text-muted)] font-semibold">
+                  <div className="flex items-center gap-2.5 p-3 bg-[var(--vg-surface-subtle)] border border-[var(--vg-border)] rounded-xl text-2xs text-[var(--vg-text-muted)] font-semibold">
                     <ShieldIcon className="w-4 h-4 shrink-0 text-[var(--vg-gold)]" />
                     <span>Dữ liệu của bản thử nghiệm được lưu tạm trong phiên trình duyệt.</span>
                   </div>
@@ -360,7 +365,7 @@ export default function ProcedureWorkspace({
                 <div className="lg:col-span-7 space-y-6">
                   <div className="bg-[var(--vg-surface)] border border-[var(--vg-border)] rounded-xl p-5 space-y-4">
                     <div className="border-b border-[var(--vg-border)] pb-3 mb-3 text-left">
-                      <span className="text-[10px] font-bold text-[var(--vg-accent)] tracking-wider uppercase block">
+                      <span className="text-2xs font-bold text-[var(--vg-accent)] tracking-wider uppercase block">
                         {state.checklist.fixture_mode || state.checklist.demo_mode
                           ? "Biểu mẫu demo MVP"
                           : "Tờ khai"}
@@ -393,7 +398,7 @@ export default function ProcedureWorkspace({
               </div>
             </div>
           ) : (
-            <div className="m-auto w-full max-w-md space-y-4">
+            <div className="m-auto w-full max-w-md space-y-4 animate-vg-reveal">
               <div className="flex flex-col items-center text-center p-8 bg-[var(--vg-surface)] border border-[var(--vg-border)] rounded-2xl">
                 <div className="w-16 h-16 rounded-full bg-[var(--vg-gold-soft)] flex items-center justify-center text-[var(--vg-gold)] mb-4">
                   <DocIcon />
@@ -411,7 +416,7 @@ export default function ProcedureWorkspace({
                 </span>
                 <div>
                   <h3 className="text-xs font-bold text-[var(--vg-text)]">Kiểm tra sơ bộ</h3>
-                  <p className="text-[11px] text-[var(--vg-text-muted)] mt-0.5">
+                  <p className="text-2xs text-[var(--vg-text-muted)] mt-0.5">
                     Chức năng sẽ khả dụng sau khi hoàn tất tờ khai.
                   </p>
                 </div>
