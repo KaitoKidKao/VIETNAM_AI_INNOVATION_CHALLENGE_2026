@@ -44,9 +44,9 @@ def test_all_three_demo_packs_load_demo_approved_with_watermark() -> None:
 def test_every_rule_type_is_exercised_in_every_pack() -> None:
     for pack in load_demo_packs().values():
         used_types = {rule.type for rule in pack.validation_rules}
-        assert used_types == set(ValidationRuleType), (
-            f"{pack.procedure_id} thiếu rule type: {set(ValidationRuleType) - used_types}"
-        )
+        assert used_types == set(
+            ValidationRuleType
+        ), f"{pack.procedure_id} thiếu rule type: {set(ValidationRuleType) - used_types}"
 
 
 def test_citation_coverage_is_complete() -> None:
@@ -56,9 +56,7 @@ def test_citation_coverage_is_complete() -> None:
             assert item.source_ref_ids, f"{pack.procedure_id}/{item.id} thiếu citation"
             assert set(item.source_ref_ids) <= known_refs
         for rule in pack.validation_rules:
-            assert rule.source_ref_ids, (
-                f"{pack.procedure_id}/{rule.rule_id} thiếu citation"
-            )
+            assert rule.source_ref_ids, f"{pack.procedure_id}/{rule.rule_id} thiếu citation"
             assert set(rule.source_ref_ids) <= known_refs
 
 
@@ -254,9 +252,7 @@ def test_demo_mode_never_emits_verified_guidance(client: TestClient) -> None:
 
     assert all(response.status_code == 200 for response in responses)
     assert all(response.json()["demo_mode"] is True for response in responses)
-    assert all(
-        response.json()["trust_state"] != "verified_guidance" for response in responses
-    )
+    assert all(response.json()["trust_state"] != "verified_guidance" for response in responses)
 
 
 def test_openapi_route_set_includes_feedback(client: TestClient) -> None:

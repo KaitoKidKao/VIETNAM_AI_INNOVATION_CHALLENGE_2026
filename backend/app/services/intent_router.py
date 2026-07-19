@@ -14,9 +14,7 @@ class IntakeDisposition(str, Enum):
 
 def normalize_intent_text(value: str) -> str:
     decomposed = unicodedata.normalize("NFD", value.lower())
-    without_marks = "".join(
-        char for char in decomposed if unicodedata.category(char) != "Mn"
-    )
+    without_marks = "".join(char for char in decomposed if unicodedata.category(char) != "Mn")
     ascii_words = re.sub(r"[^a-z0-9]+", " ", without_marks.replace("đ", "d"))
     return re.sub(r"\s+", " ", ascii_words).strip()
 
@@ -61,10 +59,7 @@ def classify_intake_text(value: str) -> IntakeDisposition:
         return IntakeDisposition.GREETING
     if any(_contains_all(normalized, pattern) for pattern in OUT_OF_SCOPE_PATTERNS):
         return IntakeDisposition.OUT_OF_SCOPE
-    if any(
-        _contains_all(normalized, pattern)
-        for pattern in UNSUPPORTED_NEAR_INTENT_PATTERNS
-    ):
+    if any(_contains_all(normalized, pattern) for pattern in UNSUPPORTED_NEAR_INTENT_PATTERNS):
         return IntakeDisposition.UNSUPPORTED_NEAR_INTENT
     return IntakeDisposition.CONTINUE
 

@@ -14,10 +14,7 @@ class FakeExplanationProvider:
 
     async def explain_findings(self, session_id, form_data, findings):
         assert session_id.startswith("validate-")
-        return {
-            finding.rule_id: f"Demo explanation for {finding.rule_id}"
-            for finding in findings
-        }
+        return {finding.rule_id: f"Demo explanation for {finding.rule_id}" for finding in findings}
 
 
 def _settings() -> Settings:
@@ -39,9 +36,7 @@ def _answers_for(procedure_id: str) -> dict[str, str]:
     }
 
 
-def test_all_three_demo_packs_complete_structured_flow_without_verified_guidance() -> (
-    None
-):
+def test_all_three_demo_packs_complete_structured_flow_without_verified_guidance() -> None:
     client = TestClient(create_app(_settings()))
 
     for procedure_id, pack in load_demo_packs().items():
@@ -85,15 +80,11 @@ def test_all_three_demo_packs_complete_structured_flow_without_verified_guidance
 def test_llm_kill_switch_changes_only_explanations_not_rules_or_verdict() -> None:
     settings = _settings()
     disabled_container = build_container(settings)
-    disabled_client = TestClient(
-        create_app(settings=settings, container=disabled_container)
-    )
+    disabled_client = TestClient(create_app(settings=settings, container=disabled_container))
 
     enabled_container = build_container(settings)
     enabled_container.llm_provider = FakeExplanationProvider()
-    enabled_client = TestClient(
-        create_app(settings=settings, container=enabled_container)
-    )
+    enabled_client = TestClient(create_app(settings=settings, container=enabled_container))
     payload = {"procedure_id": "dang-ky-khai-sinh", "form_data": {}}
 
     disabled = disabled_client.post("/v1/applications/validate", json=payload).json()
@@ -103,9 +94,7 @@ def test_llm_kill_switch_changes_only_explanations_not_rules_or_verdict() -> Non
     assert enabled["explanations"]
     assert disabled["verdict"] == enabled["verdict"] == "needs_fix"
     assert disabled["findings"] == enabled["findings"]
-    assert (
-        disabled["trust_state"] == enabled["trust_state"] == "official_review_required"
-    )
+    assert disabled["trust_state"] == enabled["trust_state"] == "official_review_required"
     assert disabled["demo_mode"] is enabled["demo_mode"] is True
 
 

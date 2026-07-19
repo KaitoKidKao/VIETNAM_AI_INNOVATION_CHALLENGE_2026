@@ -60,14 +60,10 @@ def load_demo_packs() -> dict[str, ProcedurePack]:
                 "chỉ pack watermark demo được nạp qua adapter này."
             )
         if pack.review_status != ReviewStatus.DEMO_APPROVED:
-            raise ValueError(
-                f"Demo pack {path.name} phải dùng review_status=demo_approved."
-            )
+            raise ValueError(f"Demo pack {path.name} phải dùng review_status=demo_approved.")
         packs[pack.procedure_id] = pack
     if not packs:
-        raise FileNotFoundError(
-            f"Không tìm thấy demo pack JSON nào trong {DEMO_PACK_DIR}"
-        )
+        raise FileNotFoundError(f"Không tìm thấy demo pack JSON nào trong {DEMO_PACK_DIR}")
     return packs
 
 
@@ -103,18 +99,13 @@ class DemoPackRecommendationProvider:
         ranked.sort(key=lambda item: item[0], reverse=True)
         top_score, top_pack, top_alias = ranked[0]
         second_score = ranked[1][0]
-        if (
-            top_score < FUZZY_ALIAS_THRESHOLD
-            or top_score - second_score < FUZZY_SCORE_MARGIN
-        ):
+        if top_score < FUZZY_ALIAS_THRESHOLD or top_score - second_score < FUZZY_SCORE_MARGIN:
             return []
         match_kind = "chính xác" if top_score == 1.0 else "gần đúng bảo thủ"
         return [
             ProcedureCandidate(
                 procedure_id=top_pack.procedure_id,
                 name=top_pack.name,
-                reason=(
-                    f'Khớp {match_kind} với cụm "{top_alias}" (điểm {top_score:.2f}).'
-                ),
+                reason=(f'Khớp {match_kind} với cụm "{top_alias}" (điểm {top_score:.2f}).'),
             )
         ]

@@ -54,9 +54,7 @@ def test_feedback_accepts_request_and_audits_metadata_only() -> None:
 
 
 def test_feedback_rejects_unknown_fields_and_oversized_notes() -> None:
-    client = TestClient(
-        create_app(Settings(app_env="test", procedure_data_mode="demo_pack"))
-    )
+    client = TestClient(create_app(Settings(app_env="test", procedure_data_mode="demo_pack")))
     unknown = client.post(
         "/v1/feedback",
         json={**feedback_payload(), "unexpected": "value"},
