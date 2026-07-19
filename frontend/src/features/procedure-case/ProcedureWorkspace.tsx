@@ -97,17 +97,8 @@ export default function ProcedureWorkspace({
       {/* Header */}
       <header className="flex items-center justify-between gap-4 px-6 pr-[max(1.5rem,env(safe-area-inset-right))] pl-[max(1.5rem,env(safe-area-inset-left))] py-3 min-h-[72px] bg-[var(--vg-surface)] border-b border-[var(--vg-border)] shrink-0 relative z-20">
         <div className="flex items-center gap-3 min-w-0">
-          <Image src={vngovSymbol} alt="Biểu tượng VNGov" className="w-9 h-9 shrink-0 object-contain" priority unoptimized />
-          <Image src={portalLogo} alt="Cổng dịch vụ công Quốc gia" className="h-7 w-auto hidden sm:block" priority />
-          <span className="text-[var(--vg-border-strong)] font-light text-lg hidden sm:inline">|</span>
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base font-bold tracking-tight text-[var(--vg-text)] truncate">
-              VNGov Copilot
-            </span>
-            <span className="text-[10px] font-semibold text-[var(--vg-text-muted)] hidden md:inline">
-              Trợ lý AI cho dịch vụ công
-            </span>
-          </div>
+          <Image src={vngovSymbol} alt="Biểu tượng VNGov" className="w-10 h-10 shrink-0 object-contain" priority unoptimized />
+          <Image src={portalLogo} alt="Cổng dịch vụ công Quốc gia" className="h-11 w-auto" priority />
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
@@ -122,45 +113,37 @@ export default function ProcedureWorkspace({
             onClick={actions.resetSession}
             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--vg-border)] bg-[var(--vg-surface)] hover:bg-[var(--vg-surface-subtle)] text-xs font-semibold text-[var(--vg-text-secondary)] transition-all"
           >
-            Xóa dữ liệu phiên
+            Xóa đoạn chat
           </button>
 
-          <div
-            role="status"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-bold ${
-              state.availability.backendReachable
-                ? "bg-[var(--vg-success-soft)] border-[var(--vg-success)]/30 text-[var(--vg-success)]"
-                : "bg-[var(--vg-error-soft)] border-[var(--vg-error)]/30 text-[var(--vg-error)]"
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${state.availability.backendReachable ? "bg-[var(--vg-success)] animate-pulse" : "bg-[var(--vg-error)]"}`}
-            />
-            {state.availability.backendReachable ? "Hệ thống kết nối" : "Mất kết nối"}
-          </div>
+          {!state.availability.backendReachable && (
+            <div
+              role="status"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[10px] font-bold bg-[var(--vg-error-soft)] border-[var(--vg-error)]/30 text-[var(--vg-error)]"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--vg-error)]" />
+              Mất kết nối
+            </div>
+          )}
 
-          <div className="hidden text-right sm:block">
-            <p className="text-xs font-bold text-[var(--vg-accent)]">{user?.display_name ?? "Người dùng"}</p>
+          <div className="flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full border border-[var(--vg-border)] bg-[var(--vg-surface-subtle)]">
+            <span className="w-7 h-7 rounded-full bg-[var(--vg-accent)] text-white flex items-center justify-center font-bold text-[10px]">
+              {(user?.display_name ?? "ND").slice(0, 2).toUpperCase()}
+            </span>
+            <span className="text-xs font-bold text-[var(--vg-text)] hidden sm:inline">
+              {user?.display_name ?? "Người dùng"}
+            </span>
+            <span className="text-[var(--vg-border-strong)] hidden sm:inline">·</span>
             <button
               type="button"
               onClick={onLogout}
               disabled={avatarDisabled}
-              className="text-[10px] font-semibold text-[var(--vg-text-muted)] hover:text-[var(--vg-error)] disabled:opacity-40 disabled:cursor-not-allowed"
+              title={avatarDisabled ? "Không khả dụng trong chế độ xem trước" : undefined}
+              className="text-[11px] font-semibold text-[var(--vg-text-muted)] hover:text-[var(--vg-error)] disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Đăng xuất
             </button>
           </div>
-
-          <button
-            type="button"
-            onClick={onLogout}
-            disabled={avatarDisabled}
-            aria-label="Đăng xuất"
-            title={avatarDisabled ? "Không khả dụng trong chế độ xem trước" : undefined}
-            className="w-8 h-8 rounded-full bg-[var(--vg-surface-subtle)] border border-[var(--vg-border)] flex items-center justify-center font-bold text-xs text-[var(--vg-accent)] hover:bg-[var(--vg-gold-soft)] transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[var(--vg-surface-subtle)]"
-          >
-            {(user?.display_name ?? "ND").slice(0, 2).toUpperCase()}
-          </button>
         </div>
       </header>
 
