@@ -16,6 +16,8 @@ interface PrecheckPanelProps {
   onConfirmU3: () => void;
   onFeedback: (vote: "up" | "down", reason?: FeedbackReasonCode, note?: string) => void;
   hasConfirmedU3?: boolean;
+  procedureId?: string;
+  onStartNew?: () => void;
 }
 
 export default function PrecheckPanel({
@@ -30,6 +32,8 @@ export default function PrecheckPanel({
   onConfirmU3,
   onFeedback,
   hasConfirmedU3 = false,
+  procedureId,
+  onStartNew,
 }: PrecheckPanelProps) {
   return (
     <div className="bg-[var(--vg-surface)] border border-[var(--vg-border)] rounded-xl p-5 space-y-4 text-left">
@@ -71,6 +75,8 @@ export default function PrecheckPanel({
           onConfirmU3={onConfirmU3}
           onFeedback={onFeedback}
           hasConfirmed={hasConfirmedU3}
+          procedureId={procedureId}
+          onStartNew={onStartNew}
         />
       )}
     </div>

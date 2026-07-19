@@ -341,6 +341,8 @@ export default function ProcedureWorkspace({
                       onConfirmU3={actions.confirmU3}
                       onFeedback={(vote, reason, note) => actions.recordFeedback("precheck", vote, reason, note)}
                       hasConfirmedU3={Boolean(state.sessionContext.acknowledged_review_gates?.includes("U3"))}
+                      procedureId={state.checklist.procedure_id}
+                      onStartNew={actions.resetSession}
                     />
                   )}
                   </>
