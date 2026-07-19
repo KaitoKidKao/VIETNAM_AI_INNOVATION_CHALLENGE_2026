@@ -56,7 +56,9 @@ def test_citation_coverage_is_complete() -> None:
             assert item.source_ref_ids, f"{pack.procedure_id}/{item.id} thiếu citation"
             assert set(item.source_ref_ids) <= known_refs
         for rule in pack.validation_rules:
-            assert rule.source_ref_ids, f"{pack.procedure_id}/{rule.rule_id} thiếu citation"
+            assert rule.source_ref_ids, (
+                f"{pack.procedure_id}/{rule.rule_id} thiếu citation"
+            )
             assert set(rule.source_ref_ids) <= known_refs
 
 
@@ -253,8 +255,7 @@ def test_demo_mode_never_emits_verified_guidance(client: TestClient) -> None:
     assert all(response.status_code == 200 for response in responses)
     assert all(response.json()["demo_mode"] is True for response in responses)
     assert all(
-        response.json()["trust_state"] != "verified_guidance"
-        for response in responses
+        response.json()["trust_state"] != "verified_guidance" for response in responses
     )
 
 

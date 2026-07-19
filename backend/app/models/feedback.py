@@ -16,13 +16,16 @@ class FeedbackRequest(StrictRequestModel):
     trust_state: TrustState | None = None
     verdict: PrecheckVerdict | None = None
     vote: Literal["up", "down"]
-    reason: Literal[
-        "sai_thu_tuc",
-        "thieu_thua_giay_to",
-        "kho_hieu",
-        "loi_precheck_sai",
-        "khac",
-    ] | None = None
+    reason: (
+        Literal[
+            "sai_thu_tuc",
+            "thieu_thua_giay_to",
+            "kho_hieu",
+            "loi_precheck_sai",
+            "khac",
+        ]
+        | None
+    ) = None
     note: str | None = Field(default=None, max_length=200)
     created_at: datetime
 

@@ -95,7 +95,9 @@ class CopilotService:
                 message_plain="Hãy chọn một trong ba thủ tục MVP hoặc mô tả rõ hơn nhu cầu của mình.",
             )
 
-        pack = await self._procedure_repository.get_procedure(candidates[0].procedure_id)
+        pack = await self._procedure_repository.get_procedure(
+            candidates[0].procedure_id
+        )
         metadata = self._trust_policy.metadata_for(
             pack, ReviewGate.U1_PROCEDURE_CONFIRMATION, TrustState.NEED_MORE_INFORMATION
         )
@@ -125,7 +127,9 @@ class CopilotService:
             return await self._intake_answer(request)
         return await self._intake_review_acknowledgement(request)
 
-    async def checklist(self, procedure_id: str, request: ChecklistRequest) -> ChecklistResponse:
+    async def checklist(
+        self, procedure_id: str, request: ChecklistRequest
+    ) -> ChecklistResponse:
         self._require_known_procedure(procedure_id)
         pack = await self._procedure_repository.get_procedure(procedure_id)
         self._ensure_version(pack, request.procedure_version)
@@ -166,8 +170,9 @@ class CopilotService:
         # A curated candidate source may expose a document checklist with its
         # citations for review, but it must not unlock steps, forms or a
         # deterministic pre-check until a reviewer approves the Procedure Pack.
-        candidate_documents_available = pack.review_status == ReviewStatus.NEEDS_REVIEW and bool(
-            metadata.source_refs
+        candidate_documents_available = (
+            pack.review_status == ReviewStatus.NEEDS_REVIEW
+            and bool(metadata.source_refs)
         )
         show_documents = content_available or candidate_documents_available
         message = (
@@ -192,7 +197,9 @@ class CopilotService:
             steps=pack.steps if content_available else [],
             form_schema=pack.form_schema if content_available else {},
             form_sections=pack.form_sections if content_available else [],
-            procedure_card=build_procedure_card(pack) if verified or metadata.demo_mode else None,
+            procedure_card=build_procedure_card(pack)
+            if verified or metadata.demo_mode
+            else None,
             journey=build_journey(pack, context),
             next_action=(
                 self._answer_questions_action()
@@ -206,7 +213,9 @@ class CopilotService:
         self._require_known_procedure(request.procedure_id)
         pack = await self._procedure_repository.get_procedure(request.procedure_id)
         self._ensure_version(pack, request.procedure_version)
-        context = self._context_for_procedure(request.session_context, request.procedure_id, pack)
+        context = self._context_for_procedure(
+            request.session_context, request.procedure_id, pack
+        )
         metadata = self._trust_policy.metadata_for(
             pack, ReviewGate.U3_PRECHECK_REVIEW, TrustState.VERIFIED_GUIDANCE
         )
@@ -229,8 +238,14 @@ class CopilotService:
             )
 
         findings = self._rule_engine.validate(pack, request.form_data)
-        verdict = "needs_fix" if self._rule_engine.has_errors(findings) else "pass_preliminary"
-        explanations = await self._explain_findings_if_available(findings, request.form_data)
+        verdict = (
+            "needs_fix"
+            if self._rule_engine.has_errors(findings)
+            else "pass_preliminary"
+        )
+        explanations = await self._explain_findings_if_available(
+            findings, request.form_data
+        )
         await self._audit_sink.emit(
             "application_validate",
             {
@@ -294,7 +309,9 @@ class CopilotService:
     async def _intake_selection(self, request: IntakeRequest) -> IntakeResponse:
         assert request.selected_procedure_id is not None
         self._require_known_procedure(request.selected_procedure_id)
-        pack = await self._procedure_repository.get_procedure(request.selected_procedure_id)
+        pack = await self._procedure_repository.get_procedure(
+            request.selected_procedure_id
+        )
         candidate = (
             ProcedureCandidate(
                 procedure_id=pack.procedure_id,
@@ -331,7 +348,9 @@ class CopilotService:
         assert request.clarification_answer is not None
         procedure_id = request.session_context.procedure_id
         if not procedure_id:
-            raise AppError(422, "procedure_not_selected", "Hãy xác định thủ tục trước khi trả lời.")
+            raise AppError(
+                422, "procedure_not_selected", "Hãy xác định thủ tục trước khi trả lời."
+            )
         self._require_known_procedure(procedure_id)
         if (
             request.clarification_answer.question_id
@@ -347,7 +366,9 @@ class CopilotService:
             **request.session_context.clarification_answers,
             request.clarification_answer.question_id: request.clarification_answer.value,
         }
-        context = self._context_for_procedure(request.session_context, procedure_id, pack, answers)
+        context = self._context_for_procedure(
+            request.session_context, procedure_id, pack, answers
+        )
         metadata = self._metadata_for_intake(pack, context)
         candidate = self._candidate_for_pack(pack)
         pending_questions = self._pending_questions(pack, context)
@@ -365,11 +386,15 @@ class CopilotService:
             request, recommendation, candidate, pack, context, pending_questions
         )
 
-    async def _intake_review_acknowledgement(self, request: IntakeRequest) -> IntakeResponse:
+    async def _intake_review_acknowledgement(
+        self, request: IntakeRequest
+    ) -> IntakeResponse:
         assert request.review_gate_acknowledgement is not None
         procedure_id = request.session_context.procedure_id
         pack = (
-            await self._procedure_repository.get_procedure(procedure_id) if procedure_id else None
+            await self._procedure_repository.get_procedure(procedure_id)
+            if procedure_id
+            else None
         )
         acknowledged = list(request.session_context.acknowledged_review_gates)
         if request.review_gate_acknowledgement not in acknowledged:
@@ -430,7 +455,9 @@ class CopilotService:
             if self._pending_questions(pack, context)
             else TrustState.VERIFIED_GUIDANCE
         )
-        return self._trust_policy.metadata_for(pack, ReviewGate.U1_PROCEDURE_CONFIRMATION, state)
+        return self._trust_policy.metadata_for(
+            pack, ReviewGate.U1_PROCEDURE_CONFIRMATION, state
+        )
 
     @staticmethod
     def _candidate_for_pack(pack: ProcedurePack | None) -> ProcedureCandidate | None:
@@ -459,16 +486,24 @@ class CopilotService:
         pack: ProcedurePack | None,
         answers: dict[str, str] | None = None,
     ) -> SessionContext:
-        merged_answers = answers if answers is not None else context.clarification_answers
+        merged_answers = (
+            answers if answers is not None else context.clarification_answers
+        )
         pending = (
-            [question.id for question in pack.intake_questions if question.id not in merged_answers]
+            [
+                question.id
+                for question in pack.intake_questions
+                if question.id not in merged_answers
+            ]
             if pack
             else []
         )
         return context.model_copy(
             update={
                 "procedure_id": procedure_id,
-                "procedure_version": (pack.version if pack else context.procedure_version),
+                "procedure_version": (
+                    pack.version if pack else context.procedure_version
+                ),
                 "clarification_answers": merged_answers,
                 "pending_question_ids": pending,
             }
@@ -504,7 +539,10 @@ class CopilotService:
             return self._official_review_action()
         if questions:
             return self._answer_questions_action()
-        if ReviewGate.U1_PROCEDURE_CONFIRMATION not in context.acknowledged_review_gates:
+        if (
+            ReviewGate.U1_PROCEDURE_CONFIRMATION
+            not in context.acknowledged_review_gates
+        ):
             return NextAction(
                 code="confirm_procedure",
                 label="Xác nhận thủ tục trước khi chuyển sang checklist.",
@@ -526,10 +564,14 @@ class CopilotService:
         if not await self._llm_provider.is_available():
             return {}
         ephemeral_session_id = f"validate-{uuid.uuid4().hex}"
-        return await self._llm_provider.explain_findings(ephemeral_session_id, form_data, findings)
+        return await self._llm_provider.explain_findings(
+            ephemeral_session_id, form_data, findings
+        )
 
     @staticmethod
-    def _ensure_version(pack: ProcedurePack | None, requested_version: str | None) -> None:
+    def _ensure_version(
+        pack: ProcedurePack | None, requested_version: str | None
+    ) -> None:
         if pack and requested_version and requested_version != pack.version:
             raise AppError(
                 409,
@@ -540,8 +582,14 @@ class CopilotService:
     @staticmethod
     def _require_known_procedure(procedure_id: str) -> None:
         if not is_known_procedure(procedure_id):
-            raise AppError(404, "procedure_not_found", "Thủ tục này chưa thuộc phạm vi MVP.")
+            raise AppError(
+                404, "procedure_not_found", "Thủ tục này chưa thuộc phạm vi MVP."
+            )
 
     @staticmethod
     def _procedure_name(procedure_id: str) -> str:
-        return next(item.name for item in CANONICAL_PROCEDURES if item.procedure_id == procedure_id)
+        return next(
+            item.name
+            for item in CANONICAL_PROCEDURES
+            if item.procedure_id == procedure_id
+        )

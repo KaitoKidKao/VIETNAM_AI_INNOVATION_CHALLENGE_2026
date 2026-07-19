@@ -65,7 +65,9 @@ def load_demo_packs() -> dict[str, ProcedurePack]:
             )
         packs[pack.procedure_id] = pack
     if not packs:
-        raise FileNotFoundError(f"Không tìm thấy demo pack JSON nào trong {DEMO_PACK_DIR}")
+        raise FileNotFoundError(
+            f"Không tìm thấy demo pack JSON nào trong {DEMO_PACK_DIR}"
+        )
     return packs
 
 
@@ -112,8 +114,7 @@ class DemoPackRecommendationProvider:
                 procedure_id=top_pack.procedure_id,
                 name=top_pack.name,
                 reason=(
-                    f'Khớp {match_kind} với cụm "{top_alias}" '
-                    f"(điểm {top_score:.2f})."
+                    f'Khớp {match_kind} với cụm "{top_alias}" (điểm {top_score:.2f}).'
                 ),
             )
         ]

@@ -842,3 +842,37 @@ chua co container healthcheck.
 Dat `LEGACY_RAG_ENABLED=true` cho debug local, hoac revert task commit de quay lai
 mount router vo dieu kien. Khong co migration, secret, provider hay cloud state can
 thu hoi.
+
+---
+
+## D-027 — Giữ AI Log strict cho commit mới, miễn có audit cho legacy PR #38
+
+- **Trạng thái:** Accepted
+- **Ngày:** 2026-07-19
+- **Người đề xuất:** Codex theo yêu cầu người dùng
+- **Phạm vi:** process | tooling | CI
+- **Task Record:** `local-20260719-pr38-ci`
+- **Publish (tùy chọn):** PR #38
+- **Peer xác nhận:** Người dùng xác nhận trực tiếp trong phiên ngày 2026-07-19
+
+### Bối cảnh
+
+PR #38 chứa mười commit non-merge được tạo trước khi branch đó dùng AI Log repository-scoped. Vì `policy.json` đã hiện diện từ base, policy-presence enforcement đánh nhầm các commit legacy này và chặn merge.
+
+### Lựa chọn đã cân nhắc
+
+1. Viết lại lịch sử để thêm trailer/evidence — rủi ro cao, không cần thiết cho demo.
+2. Tắt history enforcement — làm mất kiểm soát cho mọi commit mới.
+3. Liệt kê chính xác mười SHA legacy với lý do trong policy — giữ enforcement nghiêm ngặt cho phần lịch sử còn lại.
+
+### Quyết định
+
+Chọn phương án 3. `exemptCommitOids` chỉ thêm mười SHA đã được CI liệt kê; merge commit vẫn dùng exemption có sẵn. Commit mới phải tiếp tục có `AI-Log` trailer và evidence hợp lệ.
+
+### Hệ quả và kiểm chứng
+
+`python scripts/ci/validate_repo.py --range origin/main...HEAD` phải pass, trong khi một commit mới thiếu trailer vẫn bị guard phát hiện trong test fixture. Không thay đổi API/runtime hoặc xóa lịch sử.
+
+### Rollback / fallback
+
+Revert commit sửa policy để khôi phục enforcement trước đó; nếu có commit legacy khác, đánh giá và thêm Decision/peer confirmation riêng thay vì miễn theo wildcard.
