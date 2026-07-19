@@ -46,3 +46,25 @@ class ValidationResponse(RegulatoryResponse):
             "chỉ diễn giải finding đã có, không thay đổi verdict/finding gốc)."
         ),
     )
+
+
+class PrefillRequest(StrictRequestModel):
+    """Trich xuat gia tri nhap tu mo ta tu nhien de dien nhap form (draft-only).
+
+    Luu y PII: text tu do co the chua thong tin ca nhan va duoc gui toi LLM
+    ngoai (cung gioi han da ghi trong diagram_v3.mmd cho free-text intake);
+    demo chi dung du lieu synthetic. Khong luu text/gia tri xuong DB/log.
+    """
+
+    procedure_id: str = Field(min_length=1, max_length=120)
+    procedure_version: str | None = Field(default=None, max_length=120)
+    session_id: str = Field(min_length=1, max_length=128)
+    text: str = Field(min_length=1, max_length=1_000)
+    session_context: SessionContext = Field(default_factory=SessionContext)
+
+
+class PrefillResponse(RegulatoryResponse):
+    procedure_id: str
+    proposed_form_data: dict[str, Any] = Field(default_factory=dict)
+    extraction_source: str = "none"
+    message_plain: str = Field(min_length=1, max_length=1_000)

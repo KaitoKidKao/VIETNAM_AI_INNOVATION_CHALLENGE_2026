@@ -211,6 +211,9 @@ class DisabledLLMProvider:
     async def is_available(self) -> bool:
         return False
 
+    async def extract_form_data(self, text: str, form_schema: dict) -> dict | None:
+        return None
+
     async def explain_findings(
         self, session_id: str, form_data: dict, findings: list
     ) -> dict[str, str]:

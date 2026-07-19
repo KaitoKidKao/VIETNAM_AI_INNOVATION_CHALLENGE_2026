@@ -6,6 +6,7 @@ import {
   checkHealth,
   postChecklist,
   postIntakeTurn,
+  postPrefill,
   postValidate,
   submitFeedback,
 } from "./api";
@@ -283,6 +284,26 @@ export function useProcedureCase(
     }
   }, [fixtureState, acknowledgeReviewGate]);
 
+  const prefillFromText = useCallback(async (text: string) => {
+    if (fixtureState) return;
+    const { sessionId, sessionContext, checklist, isBusy } = stateRef.current;
+    const trimmed = text.trim();
+    if (!trimmed || isBusy || !checklist) return;
+    dispatch({ type: "PREFILL_STARTED" });
+    try {
+      const response = await postPrefill({
+        procedure_id: checklist.procedure_id,
+        procedure_version: checklist.procedure_version ?? undefined,
+        session_id: sessionId,
+        text: trimmed,
+        session_context: sessionContext,
+      });
+      dispatch({ type: "PREFILL_APPLIED", values: response.proposed_form_data ?? {} });
+    } catch {
+      dispatch({ type: "PREFILL_FAILED" });
+    }
+  }, [fixtureState]);
+
   const updateFormField = useCallback(
     (key: string, value: FormFieldValue) => {
       if (fixtureState) return;
@@ -395,6 +416,7 @@ export function useProcedureCase(
       editClarificationAnswer,
       confirmU2,
       updateFormField,
+      prefillFromText,
       runPrecheck,
       confirmU3,
       selectStaticProcedure,

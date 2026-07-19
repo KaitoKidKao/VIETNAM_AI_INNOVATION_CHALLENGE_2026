@@ -33,6 +33,9 @@ export type ProcedureCaseAction =
   | { type: "VALIDATION_RESPONSE_RECEIVED"; response: ValidationResponse }
   | { type: "VALIDATION_REQUEST_FAILED"; kind: ApiFailureKind }
   | { type: "CONFIRM_U3" }
+  | { type: "PREFILL_STARTED" }
+  | { type: "PREFILL_APPLIED"; values: Record<string, FormFieldValue> }
+  | { type: "PREFILL_FAILED" }
   | { type: "SELECT_STATIC_PROCEDURE"; procedureId: string }
   | { type: "RECORD_FEEDBACK"; entry: FeedbackEntry }
   | { type: "RESET_SESSION"; sessionId: string }
@@ -350,6 +353,26 @@ function applyAction(
           ? state.dismissedFindingFields
           : [...state.dismissedFindingFields, action.key],
       };
+
+    case "PREFILL_STARTED":
+      return { ...state, isBusy: true, error: null };
+
+    case "PREFILL_APPLIED": {
+      const filled = Object.entries(action.values).filter(
+        ([, value]) => value !== null && value !== undefined && value !== "",
+      );
+      const dismissed = new Set(state.dismissedFindingFields);
+      for (const [key] of filled) dismissed.add(key);
+      return {
+        ...state,
+        isBusy: false,
+        formDraft: { ...state.formDraft, ...Object.fromEntries(filled) },
+        dismissedFindingFields: [...dismissed],
+      };
+    }
+
+    case "PREFILL_FAILED":
+      return { ...state, isBusy: false };
 
     case "RUN_PRECHECK_STARTED":
       return { ...state, isBusy: true, error: null, flow: "validating", dismissedFindingFields: [] };

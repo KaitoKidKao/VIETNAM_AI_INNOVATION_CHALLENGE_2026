@@ -22,6 +22,7 @@ import ProcedureRecommendationCard from "./intake/ProcedureRecommendationCard";
 import ClarificationQuestionCard from "./intake/ClarificationQuestionCard";
 import ChecklistPanel from "./checklist/ChecklistPanel";
 import DynamicFormRenderer from "./form/DynamicFormRenderer";
+import AutoFillFromText from "./form/AutoFillFromText";
 import PrecheckPanel from "./validation/PrecheckPanel";
 import OfficialReviewCard from "./trust/OfficialReviewCard";
 import DemoModeBanner from "./trust/DemoModeBanner";
@@ -318,6 +319,7 @@ export default function ProcedureWorkspace({
                         </a>
                       )}
                     </div>
+                    <AutoFillFromText isBusy={state.isBusy} onSubmit={actions.prefillFromText} />
                     <DynamicFormRenderer
                       checklist={state.checklist}
                       formDraft={state.formDraft}

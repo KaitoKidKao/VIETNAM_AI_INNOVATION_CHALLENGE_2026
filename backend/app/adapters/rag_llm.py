@@ -303,6 +303,10 @@ class GatewayLLMProvider:
     async def is_available(self) -> bool:
         return LLMGateway.is_online()
 
+    async def extract_form_data(self, text: str, form_schema: dict) -> dict | None:
+        """De xuat gia tri form tu mo ta tu nhien; None khi offline/khong trich duoc."""
+        return LLMGateway.extract_form_data(text, form_schema)
+
     async def explain_findings(
         self, session_id: str, form_data: dict[str, Any], findings: Sequence[Finding]
     ) -> dict[str, str]:

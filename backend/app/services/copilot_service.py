@@ -19,7 +19,12 @@ from app.models.intake import (
     RecommendationResponse,
 )
 from app.models.procedure import ProcedureCandidate, ProcedurePack, ReviewStatus
-from app.models.validation import ValidationRequest, ValidationResponse
+from app.models.validation import (
+    PrefillRequest,
+    PrefillResponse,
+    ValidationRequest,
+    ValidationResponse,
+)
 from app.ports import (
     AuditSink,
     LLMProvider,
@@ -265,6 +270,53 @@ class CopilotService:
                 review_gate=ReviewGate.U3_PRECHECK_REVIEW,
             ),
             proposed_session_context=context,
+        )
+
+    async def prefill(self, request: PrefillRequest) -> PrefillResponse:
+        """AI de xuat gia tri nhap cho form tu mo ta tu nhien (draft-only).
+
+        LLM chi tao goi y de nguoi dung review tai U3; RuleEngine van la noi
+        duy nhat tao finding/verdict. Offline/loi -> proposed rong, form dien tay.
+        """
+        self._require_known_procedure(request.procedure_id)
+        pack = await self._procedure_repository.get_procedure(request.procedure_id)
+        self._ensure_version(pack, request.procedure_version)
+        metadata = self._trust_policy.metadata_for(
+            pack, ReviewGate.U3_PRECHECK_REVIEW, TrustState.NEED_MORE_INFORMATION
+        )
+
+        proposed: dict = {}
+        source = "none"
+        extract = getattr(self._llm_provider, "extract_form_data", None)
+        if (
+            pack is not None
+            and pack.form_schema.get("properties")
+            and extract is not None
+            and self._llm_provider is not None
+            and await self._llm_provider.is_available()
+        ):
+            values = await extract(request.text, pack.form_schema)
+            if values:
+                proposed, source = values, "ai"
+
+        await self._audit_sink.emit(
+            "application_prefill",
+            {
+                "procedure_id": request.procedure_id,
+                "field_count": len(proposed),
+                "extraction_source": source,
+            },
+        )
+        return PrefillResponse(
+            **metadata.model_dump(),
+            procedure_id=request.procedure_id,
+            proposed_form_data=proposed,
+            extraction_source=source,
+            message_plain=(
+                f"Đã đề xuất {len(proposed)} trường từ mô tả của bạn. Hãy kiểm tra lại trước khi tiền kiểm."
+                if proposed
+                else "Chưa trích xuất được thông tin nào; bạn có thể điền trực tiếp vào biểu mẫu."
+            ),
         )
 
     async def _intake_free_text(self, request: IntakeRequest) -> IntakeResponse:

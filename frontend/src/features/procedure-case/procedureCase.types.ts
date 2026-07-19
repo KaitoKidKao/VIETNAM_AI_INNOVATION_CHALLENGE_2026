@@ -215,6 +215,13 @@ export interface Finding {
   source_ref_ids: string[];
 }
 
+export interface PrefillResponse extends TrustMetadata {
+  procedure_id: string;
+  proposed_form_data: Record<string, FormFieldValue>;
+  extraction_source: "ai" | "none";
+  message_plain: string;
+}
+
 export interface ValidationResponse extends TrustMetadata {
   procedure_id: string;
   verdict: PrecheckVerdict | null;
