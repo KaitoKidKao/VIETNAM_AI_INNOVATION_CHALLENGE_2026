@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TranscriptMessage } from "../procedureCase.types";
 import SourceDrawer from "../trust/SourceDrawer";
 
@@ -32,7 +32,7 @@ export default function ChatTranscript({ messages }: ChatTranscriptProps) {
   const endRef = useRef<HTMLDivElement>(null);
   // Messages present on mount (e.g. a restored session) render without an
   // entrance animation; only ones arriving afterward are "new".
-  const initialSeenCount = useRef(messages.length).current;
+  const [initialSeenCount] = useState(() => messages.length);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
